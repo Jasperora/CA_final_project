@@ -98,15 +98,16 @@ module CHIP #(                                                                  
         wire [BIT_W-1:0] mem_addr, mem_wdata, mem_rdata;
         wire mem_stall;
 
-        reg [BIT_W-1:0] rdata1, rdata2;
+        wire [BIT_W-1:0] rdata1, rdata2;
 
-        wire Branch;
-        wire MemRead;
-        wire MemtoReg;
-        wire [1:0] ALUOp;
-        wire MemWrite;
         wire ALUSrc;
+        wire MemtoReg;
         wire RegWrite;
+        wire MemRead;
+        wire MemWrite;
+        wire Branch;
+        wire [1:0] ALUOp;
+        wire [3:0] ALU_control_input;
 
 // ------------------------------------------------------------------------------------------------------------------------------------------------------
 // Continuous Assignment
@@ -119,6 +120,11 @@ module CHIP #(                                                                  
         assign MemRead = (i_IMEM_data[6:0]==7'b0000011);
         assign MemWrite = (i_IMEM_data[6:0]==7'b0100011);
         assign Branch = (i_IMEM_data[6:0]==7'b1100011);
+        assign ALUOp[1] = (i_IMEM_data[6:0]==7'b0110011);
+        assign ALUOp[0] = (i_IMEM_data[6:0]==7'b1100011);
+        
+        assign ALU_control_input = (ALUOp==2'b00 ? 4'b0010 : (ALUOp[0]==1'b1 ? 4'b0110 : (i_IMEM_data[14:12]==3'b000 ? 4'b0010 : \
+            (i_IMEM_data[30]==1'b1 ? 4'b0110 : (i_IMEM_data[[14:12]==3'b111 ? 4'b0000 : 4'b0001])))));
 
 // ------------------------------------------------------------------------------------------------------------------------------------------------------
 // Submoddules
@@ -135,6 +141,17 @@ module CHIP #(                                                                  
         .wdata  (mem_wdata),             
         .rdata1 (rdata1),           
         .rdata2 (rdata2)
+    );
+
+    ALU alu0(
+        .i_clk(i_clk),
+        .i_rst_n(i_rst_n),
+        .i_valid(),
+        .i_A(rdata1),
+        .i_B(rdata2),
+        .aluCtrl(ALU_control_input),
+        .o_data(),
+        .o_done()
     );
 
 // ------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -210,8 +227,8 @@ module ALU(
         output [2*BIT_W - 1 : 0]    o_data,  // output value
         output                      o_done   // output valid signal
 );
-    reg                     o_done_r, o_done_r_nxt;  
-    reg [2*BIT_W - 1: 0]    o_data_r, o_data_r_nxt;
+    reg                     o_done_r, o_done_w;  
+    reg [2*BIT_W - 1: 0]    o_data_r, o_data_w;
 
     assign o_done = o_done_r;
     assign o_data = o_data_r;
@@ -221,6 +238,7 @@ module ALU(
     localparam CI_ADD   = 4'b0010;
     localparam CI_SUB   = 4'b0110;
 
+<<<<<<< HEAD
     if (!i_valid)begin
     end
     else begin
@@ -248,6 +266,34 @@ module ALU(
                 o_done_r <= o_data_r_nxt;
                 o_data_r <= o_data_r_nxt;
             end
+=======
+    case (aluCtrl)
+        CI_AND: begin
+            o_data_w = i_A & i_B;
+        end
+
+        CI_OR: begin
+            o_data_w = i_A | i_B;
+        end
+
+        CI_ADD: begin
+            o_data_w = i_A + i_B;
+        end
+
+        CI_SUB: begin
+            o_data_w = i_A - i_B;
+        end
+    endcase    
+
+    always @(posedge i_clk or negedge i_rst_n)begin
+        if(!i_rst_n)begin
+            o_done_r <= 0;
+            o_data_r <= 0;
+        end
+        else begin
+            o_done_r <= o_data_w;
+            o_data_r <= o_data_w;
+>>>>>>> 8401165a4e0aee392af79d1259f31771900e61d4
         end
     end
 
