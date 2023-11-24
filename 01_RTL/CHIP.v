@@ -98,7 +98,7 @@ module CHIP #(                                                                  
         wire [BIT_W-1:0] mem_addr, mem_wdata, mem_rdata;
         wire mem_stall;
 
-        reg [BIT_W-1:0] rdata1, rdata2;
+        wire [BIT_W-1:0] rdata1, rdata2;
 
         wire ALUSrc;
         wire MemtoReg;
@@ -141,6 +141,17 @@ module CHIP #(                                                                  
         .wdata  (mem_wdata),             
         .rdata1 (rdata1),           
         .rdata2 (rdata2)
+    );
+
+    ALU alu0(
+        .i_clk(i_clk),
+        .i_rst_n(i_rst_n),
+        .i_valid(),
+        .i_A(rdata1),
+        .i_B(rdata2),
+        .aluCtrl(ALU_control_input),
+        .o_data(),
+        .o_done()
     );
 
 // ------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -216,8 +227,8 @@ module ALU(
         output [2*BIT_W - 1 : 0]    o_data,  // output value
         output                      o_done   // output valid signal
 );
-    reg                     o_done_r, o_done_r_nxt;  
-    reg [2*BIT_W - 1: 0]    o_data_r, o_data_r_nxt;
+    reg                     o_done_r, o_done_w;  
+    reg [2*BIT_W - 1: 0]    o_data_r, o_data_w;
 
     assign o_done = o_done_r;
     assign o_data = o_data_r;
@@ -229,26 +240,30 @@ module ALU(
 
     case (aluCtrl)
         CI_AND: begin
+            o_data_w = i_A & i_B;
         end
 
         CI_OR: begin
+            o_data_w = i_A | i_B;
         end
 
         CI_ADD: begin
+            o_data_w = i_A + i_B;
         end
 
         CI_SUB: begin
+            o_data_w = i_A - i_B;
         end
     endcase    
 
     always @(posedge i_clk or negedge i_rst_n)begin
         if(!i_rst_n)begin
-            o_done_r = 0;
-            o_data_r = 0;
+            o_done_r <= 0;
+            o_data_r <= 0;
         end
         else begin
-            o_done_r <= o_data_r_nxt;
-            o_data_r <= o_data_r_nxt;
+            o_done_r <= o_data_w;
+            o_data_r <= o_data_w;
         end
     end
 
