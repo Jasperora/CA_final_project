@@ -98,12 +98,27 @@ module CHIP #(                                                                  
         wire [BIT_W-1:0] mem_addr, mem_wdata, mem_rdata;
         wire mem_stall;
 
+        reg [BIT_W-1:0] rdata1, rdata2;
+
+        wire Branch;
+        wire MemRead;
+        wire MemtoReg;
+        wire [1:0] ALUOp;
+        wire MemWrite;
+        wire ALUSrc;
+        wire RegWrite;
 
 // ------------------------------------------------------------------------------------------------------------------------------------------------------
 // Continuous Assignment
 // ------------------------------------------------------------------------------------------------------------------------------------------------------
 
     // TODO: any wire assignment
+        assign ALUSrc = (i_IMEM_data[6:0]==7'b0000011) || (i_IMEM_data[6:0]==7'b0100011);
+        assign MemtoReg = (i_IMEM_data[6:0]==7'b0000011);
+        assign RegWrite = (i_IMEM_data[6:0]==7'b0110011) || (i_IMEM_data[6:0]==7'b0000011);
+        assign MemRead = (i_IMEM_data[6:0]==7'b0000011);
+        assign MemWrite = (i_IMEM_data[6:0]==7'b0100011);
+        assign Branch = (i_IMEM_data[6:0]==7'b1100011);
 
 // ------------------------------------------------------------------------------------------------------------------------------------------------------
 // Submoddules
@@ -113,13 +128,13 @@ module CHIP #(                                                                  
     Reg_file reg0(               
         .i_clk  (i_clk),             
         .i_rst_n(i_rst_n),         
-        .wen    (),          
+        .wen    (RegWrite),          
         .rs1    (i_IMEM_data[19:15]),                
         .rs2    (i_IMEM_data[24:20]),                
         .rd     (i_IMEM_data[11:7]),                 
         .wdata  (mem_wdata),             
-        .rdata1 (),           
-        .rdata2 ()
+        .rdata1 (rdata1),           
+        .rdata2 (rdata2)
     );
 
 // ------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -127,6 +142,8 @@ module CHIP #(                                                                  
 // ------------------------------------------------------------------------------------------------------------------------------------------------------
     
     // Todo: any combinational/sequential circuit
+    always@(*)begin
+    end
 
     always @(posedge i_clk or negedge i_rst_n) begin
         if (!i_rst_n) begin
