@@ -170,20 +170,6 @@ module CHIP #(                                                                  
         .rdata2 (rdata2)
     );
 
-<<<<<<< HEAD
-    ALU alu0(
-        .i_clk(i_clk),
-        .i_rst_n(i_rst_n),
-        .i_valid(),
-        .i_A(rdata1),
-        .i_B(rdata2),
-        .aluCtrl(ALU_control_input),
-        .o_data(mem_wdata),
-        .o_done()
-    );
-
-=======
->>>>>>> cceb7abffd3bb4ab13cac7404a05283d55df2704
     MULDIV_unit muldiv0(
         .i_clk(i_clk),
         .i_rst_n(i_rst_n),
@@ -324,6 +310,7 @@ module CHIP #(                                                                  
             end
 
             S_ADD: begin
+                
             end
 
             S_SUB: begin
