@@ -205,20 +205,70 @@ module Reg_file(i_clk, i_rst_n, wen, rs1, rs2, rd, wdata, rdata1, rdata2);
     end
 endmodule
 
+module ALU(
+        input                       i_clk,   // clock
+        input                       i_rst_n,
+        input                       i_valid, // input valid signal
+        input [BIT_W - 1 : 0]       i_A,     // input operand A
+        input [BIT_W - 1 : 0]       i_B,     // input operand B
+        input [         3 : 0]      aluCtrl,  // ALU control
+
+        output [2*BIT_W - 1 : 0]    o_data,  // output value
+        output                      o_done   // output valid signal
+);
+    reg                     o_done_r, o_done_r_nxt;  
+    reg [2*BIT_W - 1: 0]    o_data_r, o_data_r_nxt;
+
+    assign o_done = o_done_r;
+    assign o_data = o_data_r;
+
+    localparam CI_AND   = 4'b0000;
+    localparam CI_OR    = 4'b0001;
+    localparam CI_ADD   = 4'b0010;
+    localparam CI_SUB   = 4'b0110;
+
+    case (aluCtrl)
+        CI_AND: begin
+        end
+
+        CI_OR: begin
+        end
+
+        CI_ADD: begin
+        end
+
+        CI_SUB: begin
+        end
+    endcase    
+
+    always @(posedge i_clk or negedge i_rst_n)begin
+        if(!i_rst_n)begin
+            o_done_r = 0;
+            o_data_r = 0;
+        end
+        else begin
+            o_done_r <= o_data_r_nxt;
+            o_data_r <= o_data_r_nxt;
+        end
+    end
+
+
+endmodule
+
 module MULDIV_unit(
     // TODO: port declaration
         input                       i_clk,   // clock
         input                       i_rst_n, // reset
 
         input                       i_valid, // input valid signal
-        input [DATA_W - 1 : 0]      i_A,     // input operand A
-        input [DATA_W - 1 : 0]      i_B,     // input operand B
+        input [BIT_W - 1 : 0]      i_A,     // input operand A
+        input [BIT_W - 1 : 0]      i_B,     // input operand B
         input [         2 : 0]      i_inst,  // instruction
 
-        output [2*DATA_W - 1 : 0]   o_data,  // output value
+        output [2*BIT_W - 1 : 0]   o_data,  // output value
         output                      o_done   // output valid signal
     );
-    // Todo: HW2
+    // TODO: HW2
 endmodule
 
 module Cache#(
@@ -258,6 +308,6 @@ module Cache#(
     assign o_proc_stall = i_mem_stall;          //
     //------------------------------------------//
 
-    // Todo: BONUS
+    // TODO: BONUS
 
 endmodule
