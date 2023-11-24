@@ -29,132 +29,156 @@ module CHIP #(                                                                  
 // ------------------------------------------------------------------------------------------------------------------------------------------------------
 
     // TODO: any declaration
-        // auipc
-        parameter auipc_opcode = 7'b0010111
-        // jal
-        parameter jal_opcode   = 7'b1101111
-        // jalr
-        parameter jalr_opcode  = 7'b1100111
-        // add
-        parameter add_funct7   = 7'b0000000
-        parameter add_funct3   = 3'b000
-        parameter add_opcode   = 7'b0110011
-        // sub
-        parameter sub_funct7   = 7'b0100000
-        parameter sub_funct3   = 3'b000
-        parameter sub_opcode   = 7'b0110011
-        // and
-        parameter and_funct7   = 7'b0000000
-        parameter and_funct3   = 3'b111
-        parameter and_opcode   = 7'b0110011
-        // xor
-        parameter xor_funct7   = 7'b0000000
-        parameter xor_funct3   = 3'b100
-        parameter xor_opcode   = 7'b0110011
-        // addi
-        parameter addi_funct3  = 3'b000
-        parameter addi_opcode  = 7'b0010011
-        // slli
-        parameter slli_funct3  = 3'b001
-        parameter slli_opcode  = 7'b0010011
-        // slti
-        parameter slti_funct3  = 3'b010
-        parameter slti_opcode  = 7'b0010011
-        // srai
-        parameter srai_funct7  = 7'b0100000
-        parameter srai_funct3  = 3'b101
-        parameter srai_opcode  = 7'b0010011
-        // lw
-        parameter lw_funct3    = 3'b010
-        parameter lw_opcode    = 7'b0000011
-        // sw
-        parameter sw_funct3    = 3'b010
-        parameter sw_opcode    = 7'b0100011
-        // mul
-        parameter mul_funct3   = 3'b000
-        parameter mul_opcode   = 7'b0110011
-        // beq
-        parameter beq_funct3   = 3'b000
-        parameter beq_opcode   = 7'b1100011
-        // bge
-        parameter bge_funct3   = 3'b101
-        parameter bge_opcode   = 7'b1100011
-        // blt
-        parameter blt_funct3   = 3'b100
-        parameter blt_opcode   = 7'b1100011
-        // bne
-        parameter bne_funct3   = 3'b001
-        parameter bne_opcode   = 7'b1100011
-        // ecall
-        parameter ecall_opcode = 7'b1110011
-        parameter ecall        = 32'b0000_0000_0001_0000_0000_0000_0111_0011
+    // auipc
+    parameter auipc_opcode = 7'b0010111
+    // jal
+    parameter jal_opcode   = 7'b1101111
+    // jalr
+    parameter jalr_opcode  = 7'b1100111
+    // add
+    parameter add_funct7   = 7'b0000000
+    parameter add_funct3   = 3'b000
+    parameter add_opcode   = 7'b0110011
+    // sub
+    parameter sub_funct7   = 7'b0100000
+    parameter sub_funct3   = 3'b000
+    parameter sub_opcode   = 7'b0110011
+    // and
+    parameter and_funct7   = 7'b0000000
+    parameter and_funct3   = 3'b111
+    parameter and_opcode   = 7'b0110011
+    // xor
+    parameter xor_funct7   = 7'b0000000
+    parameter xor_funct3   = 3'b100
+    parameter xor_opcode   = 7'b0110011
+    // addi
+    parameter addi_funct3  = 3'b000
+    parameter addi_opcode  = 7'b0010011
+    // slli
+    parameter slli_funct3  = 3'b001
+    parameter slli_opcode  = 7'b0010011
+    // slti
+    parameter slti_funct3  = 3'b010
+    parameter slti_opcode  = 7'b0010011
+    // srai
+    parameter srai_funct7  = 7'b0100000
+    parameter srai_funct3  = 3'b101
+    parameter srai_opcode  = 7'b0010011
+    // lw
+    parameter lw_funct3    = 3'b010
+    parameter lw_opcode    = 7'b0000011
+    // sw
+    parameter sw_funct3    = 3'b010
+    parameter sw_opcode    = 7'b0100011
+    // mul
+    parameter mul_funct3   = 3'b000
+    parameter mul_opcode   = 7'b0110011
+    // beq
+    parameter beq_funct3   = 3'b000
+    parameter beq_opcode   = 7'b1100011
+    // bge
+    parameter bge_funct3   = 3'b101
+    parameter bge_opcode   = 7'b1100011
+    // blt
+    parameter blt_funct3   = 3'b100
+    parameter blt_opcode   = 7'b1100011
+    // bne
+    parameter bne_funct3   = 3'b001
+    parameter bne_opcode   = 7'b1100011
+    // ecall
+    parameter ecall_opcode = 7'b1110011
+    parameter ecall        = 32'b0000_0000_0001_0000_0000_0000_0111_0011
 
-        // state
-        parameter S_IDLE = 5'd0
-        parameter S_AUIPC = 5'd1
-        parameter S_JAL = 5'd2
-        parameter S_JALR = 5'd3
-        parameter S_ADD = 5'd4
-        parameter S_SUB = 5'd5
-        parameter S_AND = 5'd6
-        parameter S_XOR = 5'd7
-        parameter S_ADDI = 5'd8
-        parameter S_SLLI = 5'd9
-        parameter S_SLTI = 5'd10
-        parameter S_SRAI = 5'd11
-        parameter S_LW = 5'd12
-        parameter S_SW = 5'd13
-        parameter S_MUL = 5'd14
-        parameter S_BEQ = 5'd15
-        parameter S_BGE = 5'd16
-        parameter S_BLT = 5'd17
-        parameter S_BNE = 5'd18
-        parameter S_ECALL = 5'd19
+    // state
+    parameter S_IDLE = 5'd0
+    parameter S_AUIPC = 5'd1
+    parameter S_JAL = 5'd2
+    parameter S_JALR = 5'd3
+    parameter S_ADD = 5'd4
+    parameter S_SUB = 5'd5
+    parameter S_AND = 5'd6
+    parameter S_XOR = 5'd7
+    parameter S_ADDI = 5'd8
+    parameter S_SLLI = 5'd9
+    parameter S_SLTI = 5'd10
+    parameter S_SRAI = 5'd11
+    parameter S_LW = 5'd12
+    parameter S_SW = 5'd13
+    parameter S_MUL = 5'd14
+    parameter S_BEQ = 5'd15
+    parameter S_BGE = 5'd16
+    parameter S_BLT = 5'd17
+    parameter S_BNE = 5'd18
+    parameter S_ECALL = 5'd19
 
 // ------------------------------------------------------------------------------------------------------------------------------------------------------
 // Wires and Registers
 // ------------------------------------------------------------------------------------------------------------------------------------------------------
     
     // TODO: any declaration
-        reg [BIT_W-1:0] PC, next_PC;
-        wire mem_cen, mem_wen;
-        wire [BIT_W-1:0] mem_addr, mem_wdata, mem_rdata;
-        wire mem_stall;
-        reg [4:0] state, next_state;
+    reg [4:0] state, next_state;
 
-        reg [BIT_W-1:0] imm;
-        wire [BIT_W-1:0] rdata1, rdata2;
-        reg [BIT_W-1:0] rdatad, rdatad_nxt;
+    // instruction memory
+    reg [BIT_W-1:0] PC, next_PC;
+    reg IMEM_cen, IMEM_cen_nxt;
+    // wire mem_cen, mem_wen;
+    // wire [BIT_W-1:0] mem_addr, mem_wdata, mem_rdata;
+    // wire mem_stall;
 
-        reg [BIT_W-1:0] DMEM_wdata, DMEM_wdata_nxt;
+    // register
+    reg [BIT_W-1:0] imm;
+    wire [BIT_W-1:0] rdata1, rdata2;
+    reg [BIT_W-1:0] rdatad, rdatad_nxt;
 
-        wire ALUSrc;
-        wire MemtoReg;
-        wire RegWrite;
-        wire MemRead;
-        wire MemWrite;
-        wire Branch;
-        wire [1:0] ALUOp;
-        wire [3:0] ALU_control_input;
+    // data memory
+    reg DMEM_cen, DMEM_cen_nxt;
+    reg DMEM_wen, DMEM_wen_nxt;      
+    reg [BIT_W-1:0] DMEM_addr, DMEM_addr_nxt;
+    reg [BIT_W-1:0] DMEM_wdata, DMEM_wdata_nxt; 
 
-        wire muldiv_done;
+    // instruction
+    wire ALUSrc;
+    wire MemtoReg;
+    wire RegWrite;
+    wire MemRead;
+    wire MemWrite;
+    wire Branch;
+    wire [1:0] ALUOp;
+    wire [3:0] ALU_control_input;
+
+    // operation
+    wire muldiv_done;
+    wire [BIT_W-1:0] muldiv_result;
+
+    // finish procedure
+    reg finish, finish_nxt;
 
 // ------------------------------------------------------------------------------------------------------------------------------------------------------
 // Continuous Assignment
 // ------------------------------------------------------------------------------------------------------------------------------------------------------
 
     // TODO: any wire assignment
-        assign ALUSrc = (i_IMEM_data[6:0]==7'b0000011) || (i_IMEM_data[6:0]==7'b0100011);
-        assign MemtoReg = (i_IMEM_data[6:0]==7'b0000011);
-        assign RegWrite = (i_IMEM_data[6:0]==7'b0110011) || (i_IMEM_data[6:0]==7'b0000011);
-        assign MemRead = (i_IMEM_data[6:0]==7'b0000011);
-        assign MemWrite = (i_IMEM_data[6:0]==7'b0100011);
-        assign Branch = (i_IMEM_data[6:0]==7'b1100011);
-        assign ALUOp[1] = (i_IMEM_data[6:0]==7'b0110011);
-        assign ALUOp[0] = (i_IMEM_data[6:0]==7'b1100011);
-        
-        assign ALU_control_input = (ALUOp==2'b00 ? 4'b0010 : (ALUOp[0]==1'b1 ? 4'b0110 : (i_IMEM_data[14:12]==3'b000 ? 4'b0010 : \
-            (i_IMEM_data[30]==1'b1 ? 4'b0110 : (i_IMEM_data[[14:12]==3'b111 ? 4'b0000 : 4'b0001])))));
+
+    // instruction memory
+    assign o_IMEM_addr = PC;
+    assign o_IMEM_cen = IMEM_cen; // load instruction
+
+    // data memory
+    assign ALUSrc = (i_IMEM_data[6:0]==7'b0000011) || (i_IMEM_data[6:0]==7'b0100011);
+    assign MemtoReg = (i_IMEM_data[6:0]==7'b0000011);
+    assign RegWrite = (i_IMEM_data[6:0]==7'b0110011) || (i_IMEM_data[6:0]==7'b0000011);
+    assign MemRead = (i_IMEM_data[6:0]==7'b0000011);
+    assign MemWrite = (i_IMEM_data[6:0]==7'b0100011);
+    assign Branch = (i_IMEM_data[6:0]==7'b1100011);
+    assign ALUOp[1] = (i_IMEM_data[6:0]==7'b0110011);
+    assign ALUOp[0] = (i_IMEM_data[6:0]==7'b1100011);   
+    assign ALU_control_input = (ALUOp==2'b00 ? 4'b0010 : (ALUOp[0]==1'b1 ? 4'b0110 : (i_IMEM_data[14:12]==3'b000 ? 4'b0010 : \
+        (i_IMEM_data[30]==1'b1 ? 4'b0110 : (i_IMEM_data[[14:12]==3'b111 ? 4'b0000 : 4'b0001])))));
+
+    assign o_DMEM_cen = DMEM_cen;
+    assign o_DMEM_wen = DMEM_wen;
+    assign o_DMEM_addr = DMEM_addr;
+    assign o_DMEM_wdata = DMEM_wdata;
 
 // ------------------------------------------------------------------------------------------------------------------------------------------------------
 // Submoddules
@@ -168,7 +192,7 @@ module CHIP #(                                                                  
         .rs1    (i_IMEM_data[19:15]),                
         .rs2    (i_IMEM_data[24:20]),                
         .rd     (i_IMEM_data[11:7]),                 
-        .wdata  (mem_wdata),             
+        .wdata  (rdatad),             
         .rdata1 (rdata1),           
         .rdata2 (rdata2)
     );
@@ -180,9 +204,9 @@ module CHIP #(                                                                  
         .i_A(rdata1),
         .i_B(rdata2),
         .i_inst(1'b0),
-        .o_data(mem_wdata),
+        .o_data(muldiv_result),
         .o_done(muldiv_done),
-    )
+    );
 
 // ------------------------------------------------------------------------------------------------------------------------------------------------------
 // Always Blocks
@@ -192,21 +216,12 @@ module CHIP #(                                                                  
 
     // FSM
 
-    always@(*)begin // state
-        case (i_IMEM_data[6:0])
-            auipc_opcode: begin
-                state_nxt = S_AUIPC;
-            end
-            jal_opcode: begin
-                state_nxt = S_JAL;
-            end
-            jalr_opcode: begin
-                state_nxt = S_JALR;
-            end
-            add_opcode: begin
-                case({i_IMEM_data[31:25], i_IMEM_data[14:12]})
-                    {add_funct7, add_funct3}: begin
-                        state_nxt = S_ADD;
+    always @(*) begin // state
+        case (state)
+            S_IDLE: begin
+                case (i_IMEM_data[6:0])
+                    auipc_opcode: begin
+                        state_nxt = S_AUIPC;
                     end
                     jal_opcode: begin
                         state_nxt = S_JAL;
@@ -219,75 +234,89 @@ module CHIP #(                                                                  
                             {add_funct7, add_funct3}: begin
                                 state_nxt = S_ADD;
                             end
-                            {sub_funct7, sub_funct3}: begin
-                                state_nxt = S_SUB;
+                            jal_opcode: begin
+                                state_nxt = S_JAL;
                             end
-                            {and_funct7, and_funct3}: begin
-                                state_nxt = S_AND;
+                            jalr_opcode: begin
+                                state_nxt = S_JALR;
                             end
-                            {xor_funct7, xor_functs}: begin
-                                state_nxt = S_XOR;
+                            add_opcode: begin
+                                case({i_IMEM_data[31:25], i_IMEM_data[14:12]})
+                                    {add_funct7, add_funct3}: begin
+                                        state_nxt = S_ADD;
+                                    end
+                                    {sub_funct7, sub_funct3}: begin
+                                        state_nxt = S_SUB;
+                                    end
+                                    {and_funct7, and_funct3}: begin
+                                        state_nxt = S_AND;
+                                    end
+                                    {xor_funct7, xor_functs}: begin
+                                        state_nxt = S_XOR;
+                                    end
+                                    {mul_funct7, mul_funct3}: begin
+                                        state_nxt = S_MUL;
+                                    end
+                                    default: begin
+                                        state_nxt = state;
+                                    end
+                                endcase
                             end
-                            {mul_funct7, mul_funct3}: begin
-                                state_nxt = S_MUL;
+                            addi_opcode: begin
+                                case(i_IMEM_data[14:12])
+                                    addi_funct3: begin
+                                        state_nxt = S_ADDI;
+                                    end
+                                    slli_funct3: begin
+                                        state_nxt = S_SLLI;
+                                    end
+                                    slti_funct3: begin
+                                        state_nxt = S_SLTI;
+                                    end
+                                    srai_funct3: begin
+                                        state_nxt = S_SRAI;
+                                    end
+                                    default: begin
+                                        state_nxt = state;
+                                    end
+                                endcase
+                            end
+                            lw_opcode: begin
+                                state_nxt = S_LW;
+                            end
+                            sw_opcode: begin
+                                state_nxt = S_SW;
+                            end
+                            bge_opcode: begin
+                                case(i_IMEM_data[6:0])
+                                    bge_funct3: begin
+                                        state_nxt = S_BGE;
+                                    end
+                                    beq_funct3: begin
+                                        state_nxt = S_BEQ;
+                                    end
+                                    blt_funct3: begin
+                                        state_nxt = S_BLT;
+                                    end
+                                    bne_funct3: begin
+                                        state_nxt = S_BNE;
+                                    end
+                                    default: begin
+                                        state_nxt = state;
+                                    end
+                                endcase
+                            end
+                            ecall_opcode: begin
+                                state_nxt = S_ECALL;
                             end
                             default: begin
                                 state_nxt = state;
                             end
                         endcase
-                    end
-                    addi_opcode: begin
-                        case(i_IMEM_data[14:12])
-                            addi_funct3: begin
-                                state_nxt = S_ADDI;
-                            end
-                            slli_funct3: begin
-                                state_nxt = S_SLLI;
-                            end
-                            slti_funct3: begin
-                                state_nxt = S_SLTI;
-                            end
-                            srai_funct3: begin
-                                state_nxt = S_SRAI;
-                            end
-                            default: begin
-                                state_nxt = state;
-                            end
-                        endcase
-                    end
-                    lw_opcode: begin
-                        state_nxt = S_LW;
-                    end
-                    sw_opcode: begin
-                        state_nxt = S_SW;
-                    end
-                    bge_opcode: begin
-                        case(i_IMEM_data[6:0])
-                            bge_funct3: begin
-                                state_nxt = S_BGE;
-                            end
-                            beq_funct3: begin
-                                state_nxt = S_BEQ;
-                            end
-                            blt_funct3: begin
-                                state_nxt = S_BLT;
-                            end
-                            bne_funct3: begin
-                                state_nxt = S_BNE;
-                            end
-                            default: begin
-                                state_nxt = state;
-                            end
-                        endcase
-                    end
-                    ecall_opcode: begin
-                        state_nxt = S_ECALL;
-                    end
-                    default: begin
-                        state_nxt = state;
                     end
                 endcase
             end
+
             S_MUL: begin
                 if (mul_div_done): begin
                     state_nxt = S_IDLE;
@@ -296,98 +325,16 @@ module CHIP #(                                                                  
                     state_nxt = S_MUL;
                 end
             end
+            
             default: begin
                 state_nxt = S_IDLE;
             end
         endcase
     end
 
-    always@(*)begin // action
+    always @(*) begin // action
         imm = 0;
-
-        case (state)
-            S_IDLE: begin
-
-            end
-
-            S_AUIPC: begin
-                imm = {i_IMEM_data[31:12], 12'b0};
-
-            end
-
-            S_JAL: begin
-                imm = {11'b0, i_IMEM_data[31], i_IMEM_data[19:12], i_IMEM_data[20], i_IMEM_data[30:21], 1'b0};
-            end
-
-            S_JALR: begin
-                imm = {20'b0, i_IMEM_data[31:20]};
-            end
-
-            S_ADD: begin
-            end
-
-            S_SUB: begin
-            end
-
-            S_AND: begin
-            end
-
-            S_XOR: begin
-            end
-
-            S_ADDI: begin
-                imm = {20'b0, i_IMEM_data[31:20]};
-            end
-
-            S_SLLI: begin
-            end
-
-            S_SLTI: begin
-                imm = {20'b0, i_IMEM_data[31:20]};
-            end
-
-            S_SRAI: begin
-            end
-
-            S_LW: begin
-                imm = {20'b0, i_IMEM_data[31:20]};
-            end
-
-            S_SW: begin
-                imm = {20'b0, i_IMEM_data[31:25], i_IMEM_data[12:8]};
-            end
-
-            S_MUL: begin
-            end
-
-            S_BEQ: begin
-                imm = {20'b0, i_IMEM_data[31], i_IMEM_data[8], i_IMEM_data[30:25], i_IMEM_data[12:9]};
-            end
-
-            S_BGE: begin
-                imm = {20'b0, i_IMEM_data[31], i_IMEM_data[8], i_IMEM_data[30:25], i_IMEM_data[12:9]};
-            end
-
-            S_BLT: begin
-                imm = {20'b0, i_IMEM_data[31], i_IMEM_data[8], i_IMEM_data[30:25], i_IMEM_data[12:9]};
-            end
-
-            S_BNE: begin
-                imm = {20'b0, i_IMEM_data[31], i_IMEM_data[8], i_IMEM_data[30:25], i_IMEM_data[12:9]};
-            end
-
-            S_ECALL: begin
-                imm = {20'b0, i_IMEM_data[31:20]};
-            end
-
-            default: begin
-                
-            end
-        endcase
-    end
-
-    always@(*)begin
-        imm = 0;
+        rdatad_nxt = rdatad;
 
         case (state)
             S_IDLE: begin
@@ -401,7 +348,6 @@ module CHIP #(                                                                  
 
             S_JAL: begin
                 imm = {11'b0, i_IMEM_data[31], i_IMEM_data[19:12], i_IMEM_data[20], i_IMEM_data[30:21], 1'b0};
-                
             end
 
             S_JALR: begin
@@ -409,6 +355,7 @@ module CHIP #(                                                                  
             end
 
             S_ADD: begin
+                rdatad_nxt = $signed(rdata1) + $signed(rdata2);
             end
 
             S_SUB: begin
@@ -436,6 +383,7 @@ module CHIP #(                                                                  
 
             S_LW: begin
                 imm = {20'b0, i_IMEM_data[31:20]};
+
             end
 
             S_SW: begin
@@ -473,14 +421,32 @@ module CHIP #(                                                                  
 
     always @(posedge i_clk or negedge i_rst_n) begin
         if (!i_rst_n) begin
+            state <= S_IDLE;
+
             PC <= 32'h00010000; // Do not modify this value!!!
-            state <= 5'd0;
+            IMEM_cen <= 1;
+            
             rdatad <= 32'b0;
+            DMEM_wen <= 0;
+            DMEM_cen <= 1;
+            DMEM_addr <= 0;
+            DMEM_wdata <= 0;
+
+            finish <= 0;
         end
         else begin
-            PC <= next_PC;
             state <= next_state;
+
+            PC <= next_PC;
+            IMEM_cen <= IMEM_cen_nxt;
+
             rdatad <= rdatad_nxt;
+            DMEM_wen <= DMEM_wen_nxt;
+            DMEM_cen <= DMEM_cen_nxt;
+            DMEM_addr <= DMEM_addr_nxt;
+            DMEM_wdata <= DMEM_wdata_nxt;
+
+            finish <= finish;
         end
     end
 endmodule
