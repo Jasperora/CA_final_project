@@ -122,6 +122,7 @@ module CHIP #(                                                                  
         wire mem_stall;
         reg [4:0] state, next_state;
 
+        reg [BIT_W-1:0] imm;
         wire [BIT_W-1:0] rdata1, rdata2;
 
         wire ALUSrc;
@@ -169,6 +170,7 @@ module CHIP #(                                                                  
         .rdata2 (rdata2)
     );
 
+<<<<<<< HEAD
     ALU alu0(
         .i_clk(i_clk),
         .i_rst_n(i_rst_n),
@@ -180,6 +182,8 @@ module CHIP #(                                                                  
         .o_done()
     );
 
+=======
+>>>>>>> cceb7abffd3bb4ab13cac7404a05283d55df2704
     MULDIV_unit muldiv0(
         .i_clk(i_clk),
         .i_rst_n(i_rst_n),
@@ -299,6 +303,172 @@ module CHIP #(                                                                  
         endcase
     end
 
+    always@(*)begin
+        imm = 0;
+
+        case (state)
+            S_IDLE: begin
+
+            end
+
+            S_AUIPC: begin
+                imm = {i_IMEM_data[31:12], 12'b0};
+            end
+
+            S_JAL: begin
+                imm = {11'b0, i_IMEM_data[31], i_IMEM_data[19:12], i_IMEM_data[20], i_IMEM_data[30:21], 1'b0};
+            end
+
+            S_JALR: begin
+                imm = {20'b0, i_IMEM_data[31:20]};
+            end
+
+            S_ADD: begin
+            end
+
+            S_SUB: begin
+            end
+
+            S_AND: begin
+            end
+
+            S_XOR: begin
+            end
+
+            S_ADDI: begin
+                imm = {20'b0, i_IMEM_data[31:20]};
+            end
+
+            S_SLLI: begin
+            end
+
+            S_SLTI: begin
+                imm = {20'b0, i_IMEM_data[31:20]};
+            end
+
+            S_SRAI: begin
+            end
+
+            S_LW: begin
+                imm = {20'b0, i_IMEM_data[31:20]};
+            end
+
+            S_SW: begin
+                imm = {20'b0, i_IMEM_data[31:25], i_IMEM_data[12:8]};
+            end
+
+            S_MUL: begin
+            end
+
+            S_BEQ: begin
+                imm = {20'b0, i_IMEM_data[31], i_IMEM_data[8], i_IMEM_data[30:25], i_IMEM_data[12:9]};
+            end
+
+            S_BGE: begin
+                imm = {20'b0, i_IMEM_data[31], i_IMEM_data[8], i_IMEM_data[30:25], i_IMEM_data[12:9]};
+            end
+
+            S_BLT: begin
+                imm = {20'b0, i_IMEM_data[31], i_IMEM_data[8], i_IMEM_data[30:25], i_IMEM_data[12:9]};
+            end
+
+            S_BNE: begin
+                imm = {20'b0, i_IMEM_data[31], i_IMEM_data[8], i_IMEM_data[30:25], i_IMEM_data[12:9]};
+            end
+
+            S_ECALL: begin
+                imm = {20'b0, i_IMEM_data[31:20]};
+            end
+
+            default: begin
+                
+            end
+        endcase
+    end
+
+    always@(*)begin
+        imm = 0;
+
+        case (state)
+            S_IDLE: begin
+
+            end
+
+            S_AUIPC: begin
+                imm = {i_IMEM_data[31:12], 12'b0};
+            end
+
+            S_JAL: begin
+                imm = {11'b0, i_IMEM_data[31], i_IMEM_data[19:12], i_IMEM_data[20], i_IMEM_data[30:21], 1'b0};
+            end
+
+            S_JALR: begin
+                imm = {20'b0, i_IMEM_data[31:20]};
+            end
+
+            S_ADD: begin
+            end
+
+            S_SUB: begin
+            end
+
+            S_AND: begin
+            end
+
+            S_XOR: begin
+            end
+
+            S_ADDI: begin
+                imm = {20'b0, i_IMEM_data[31:20]};
+            end
+
+            S_SLLI: begin
+            end
+
+            S_SLTI: begin
+                imm = {20'b0, i_IMEM_data[31:20]};
+            end
+
+            S_SRAI: begin
+            end
+
+            S_LW: begin
+                imm = {20'b0, i_IMEM_data[31:20]};
+            end
+
+            S_SW: begin
+                imm = {20'b0, i_IMEM_data[31:25], i_IMEM_data[12:8]};
+            end
+
+            S_MUL: begin
+            end
+
+            S_BEQ: begin
+                imm = {20'b0, i_IMEM_data[31], i_IMEM_data[8], i_IMEM_data[30:25], i_IMEM_data[12:9]};
+            end
+
+            S_BGE: begin
+                imm = {20'b0, i_IMEM_data[31], i_IMEM_data[8], i_IMEM_data[30:25], i_IMEM_data[12:9]};
+            end
+
+            S_BLT: begin
+                imm = {20'b0, i_IMEM_data[31], i_IMEM_data[8], i_IMEM_data[30:25], i_IMEM_data[12:9]};
+            end
+
+            S_BNE: begin
+                imm = {20'b0, i_IMEM_data[31], i_IMEM_data[8], i_IMEM_data[30:25], i_IMEM_data[12:9]};
+            end
+
+            S_ECALL: begin
+                imm = {20'b0, i_IMEM_data[31:20]};
+            end
+
+            default: begin
+                
+            end
+        endcase
+    end
+
     always @(posedge i_clk or negedge i_rst_n) begin
         if (!i_rst_n) begin
             PC <= 32'h00010000; // Do not modify this value!!!
@@ -355,69 +525,17 @@ module Reg_file(i_clk, i_rst_n, wen, rs1, rs2, rd, wdata, rdata1, rdata2);
     end
 endmodule
 
-module ALU(
-        input                       i_clk,   // clock
-        input                       i_rst_n,
-        input                       i_valid, // input valid signal
-        input [BIT_W - 1 : 0]       i_A,     // input operand A
-        input [BIT_W - 1 : 0]       i_B,     // input operand B
-        input [         3 : 0]      aluCtrl,  // ALU control
-
-        output [2*BIT_W - 1 : 0]    o_data,  // output value
-        output                      o_done   // output valid signal
-);
-    reg                     o_done_r, o_done_w;  
-    reg [2*BIT_W - 1: 0]    o_data_r, o_data_w;
-
-    assign o_done = o_done_r;
-    assign o_data = o_data_r;
-
-    localparam CI_AND   = 4'b0000;
-    localparam CI_OR    = 4'b0001;
-    localparam CI_ADD   = 4'b0010;
-    localparam CI_SUB   = 4'b0110;
-
-    case (aluCtrl)
-        CI_AND: begin
-            o_data_w = i_A & i_B;
-        end
-
-        CI_OR: begin
-            o_data_w = i_A | i_B;
-        end
-
-        CI_ADD: begin
-            o_data_w = i_A + i_B;
-        end
-
-        CI_SUB: begin
-            o_data_w = i_A - i_B;
-        end
-    endcase    
-
-    always @(posedge i_clk or negedge i_rst_n)begin
-        if(!i_rst_n)begin
-            o_done_r <= 0;
-            o_data_r <= 0;
-        end
-        else begin
-            o_done_r <= o_data_w;
-            o_data_r <= o_data_w;
-        end
-    end
-endmodule
-
 module MULDIV_unit(
     // TODO: port declaration
         input                       i_clk,   // clock
         input                       i_rst_n, // reset
 
         input                       i_valid, // input valid signal
-        input [BIT_W - 1 : 0]      i_A,     // input operand A
-        input [BIT_W - 1 : 0]      i_B,     // input operand B
+        input [BIT_W - 1 : 0]       i_A,     // input operand A
+        input [BIT_W - 1 : 0]       i_B,     // input operand B
         input                      i_inst,  // instruction
 
-        output [2*BIT_W - 1 : 0]   o_data,  // output value
+        output [2*BIT_W - 1 : 0]    o_data,  // output value
         output                      o_done   // output valid signal
     );
     // TODO: HW2
