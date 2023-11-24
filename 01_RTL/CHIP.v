@@ -88,6 +88,28 @@ module CHIP #(                                                                  
         // ecall
         parameter ecall        = 32'b0000_0000_0001_0000_0000_0000_0111_0011
 
+        // state
+        parameter S_IDLE = 5'd0
+        parameter S_AUIPC = 5'd1
+        parameter S_JAL = 5'd2
+        parameter S_JALR = 5'd3
+        parameter S_ADD = 5'd4
+        parameter S_SUB = 5'd5
+        parameter S_AND = 5'd6
+        parameter S_XOR = 5'd7
+        parameter S_ADDI = 5'd8
+        parameter S_SLLI = 5'd9
+        parameter S_SLTI = 5'd10
+        parameter S_SRAI = 5'd11
+        parameter S_LW = 5'd12
+        parameter S_SW = 5'd13
+        parameter S_MUL = 5'd14
+        parameter S_BEQ = 5'd15
+        parameter S_BGE = 5'd16
+        parameter S_BLT = 5'd17
+        parameter S_BNE = 5'd18
+        parameter S_ECALL = 5'd19
+
 // ------------------------------------------------------------------------------------------------------------------------------------------------------
 // Wires and Registers
 // ------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -154,11 +176,19 @@ module CHIP #(                                                                  
         .o_done()
     );
 
+    MULDIV_unit muldiv0(
+        .i_clk(i_clk),
+        .i_rst_n(i_rst_n),
+
+    )
+
 // ------------------------------------------------------------------------------------------------------------------------------------------------------
 // Always Blocks
 // ------------------------------------------------------------------------------------------------------------------------------------------------------
     
     // Todo: any combinational/sequential circuit
+
+    // FSM
     always@(*)begin
     end
 
@@ -266,8 +296,6 @@ module ALU(
             o_data_r <= o_data_w;
         end
     end
-
-
 endmodule
 
 module MULDIV_unit(
@@ -284,6 +312,179 @@ module MULDIV_unit(
         output                      o_done   // output valid signal
     );
     // TODO: HW2
+        // Do not Modify the above part !!!
+
+// Parameters
+    // ======== choose your FSM style ==========
+    // 1. FSM based on operation cycles
+    parameter S_IDLE           = 2'd0;
+    parameter S_ONE_CYCLE_OP   = 2'd1;
+    parameter S_MULTI_CYCLE_OP = 2'd2;
+
+// Wires & Regs
+    // Todo
+    // state
+    reg  [         1: 0] state, state_nxt; // remember to expand the bit width if you want to add more states!
+    // load input
+    reg  [  DATA_W-1: 0] operand_a, operand_a_nxt;
+    reg  [  DATA_W-1: 0] operand_b, operand_b_nxt;
+    reg  [         2: 0] inst, inst_nxt;
+
+// Wire Assignments
+    // Todo
+    // Counter
+    reg  [4:0] cnt, cnt_nxt;
+    // Output
+    reg  [2*DATA_W - 1 : 0] o_data_cur, o_data_nxt;
+    reg                     o_done_cur, o_done_nxt;
+    
+// Always Combination
+    // load input
+    always @(*) begin
+        if (i_valid) begin
+            operand_a_nxt = i_A;
+            operand_b_nxt = i_B;
+            inst_nxt      = i_inst;
+        end
+        else begin
+            operand_a_nxt = operand_a;
+            operand_b_nxt = operand_b;
+            inst_nxt      = inst;
+        end
+    end
+    // Todo: FSM
+    always @(*) begin
+        case(state)
+            S_IDLE           : begin
+                if (i_valid) begin
+                    state_nxt = S_MULTI_CYCLE_OP;
+                end
+                else begin // stay in S_IDLE
+                    state_nxt = state;
+                end
+            end
+            S_MULTI_CYCLE_OP : begin
+                if (cnt==5'd31) begin
+                    state_nxt = S_IDLE;
+                end
+                else begin
+                    state_nxt = S_MULTI_CYCLE_OP;
+                end
+            end
+            default : state_nxt = state;
+        endcase
+    end
+    // Todo: Counter
+    always @(negedge i_clk) begin
+        if (state==S_MULTI_CYCLE_OP) begin
+            cnt_nxt = cnt + 1;
+        end
+        else begin
+            cnt_nxt = cnt;
+        end
+    end
+    // Todo: ALU output
+    always @(*) begin
+        if (state==S_MULTI_CYCLE_OP) begin
+            case(inst)
+                3'd6: begin // MUL A: multiplicand, B: multiplier
+                    if (cnt==0) begin
+                        if (operand_b[0]==1)begin
+                            o_data_nxt = {operand_a, operand_b} >> 1;
+                        end
+                        else begin
+                            o_data_nxt = {{DATA_W{1'b0}}, operand_b} >> 1;
+                        end
+                        o_done_nxt = 0;
+                    end
+                    else if (cnt<31) begin
+                        if (o_data_cur[0]==1) begin
+                            o_data_nxt = {{1'b0, o_data_cur[2*DATA_W-1:DATA_W]} + {1'b0, operand_a}, o_data_cur[DATA_W-1:1]};
+                        end
+                        else begin
+                            o_data_nxt = o_data_cur >> 1;
+                        end
+                        o_done_nxt = 0;
+                    end
+                    else begin
+                        if (o_data_cur[0]==1) begin
+                            o_data_nxt = {{1'b0, o_data_cur[2*DATA_W-1:DATA_W]} + {1'b0, operand_a}, o_data_cur[DATA_W-1:1]};
+                        end
+                        else begin
+                            o_data_nxt = o_data_cur >> 1;
+                        end
+                        o_done_nxt = 1;
+                    end
+                end
+                3'd7: begin // DIV
+                    if (cnt==0) begin
+                        if (operand_a[DATA_W-1] < operand_b) begin
+                            o_data_nxt = operand_a << 2;
+                        end
+                        else begin
+                            o_data_nxt = (({{(DATA_W-1){1'b0}}, operand_a, 1'b0}-{operand_b, {DATA_W{1'b0}}}) << 1) + 1;
+                        end
+                        o_done_nxt = 0;
+                    end
+                    else if (cnt<31) begin
+                        if (o_data_cur[2*DATA_W-1:DATA_W] < operand_b) begin // shift_l
+                            o_data_nxt = o_data_cur << 1;
+                        end
+                        else begin // // sub, shift_l
+                            o_data_nxt[2*DATA_W-1:DATA_W+1] = o_data_cur[2*DATA_W-1:DATA_W]-operand_b;
+                            o_data_nxt[DATA_W:0] = (o_data_cur[DATA_W-1:0] << 1) + 1;
+                        end
+                        o_done_nxt = 0;
+                    end
+                    else begin // cnt==31
+                        if (o_data_cur[2*DATA_W-1:DATA_W] < operand_b) begin // shift_l, shift_r(left_half)
+                            o_data_nxt[2*DATA_W-1:DATA_W] = o_data_cur[2*DATA_W-1:DATA_W];
+                            o_data_nxt[DATA_W-1:0] = o_data_cur[DATA_W-1:0] << 1;
+                        end
+                        else begin // sub, shift_l, shift_r(left_half)
+                            o_data_nxt[2*DATA_W-1:DATA_W] = o_data_cur[2*DATA_W-1:DATA_W] - operand_b;
+                            o_data_nxt[DATA_W-1:0] = (o_data_cur[DATA_W-1:0] << 1) + 1;
+                        end
+                        o_done_nxt = 1;
+                    end
+                end
+                default: begin
+                    o_data_nxt = o_data_cur;
+                    o_done_nxt = o_done_cur;
+                end
+            endcase
+        end
+        else begin
+            o_data_nxt = 0;
+            o_done_nxt = 0;
+        end
+    end
+    
+    // Todo: output valid signal
+    assign o_data = o_data_cur;
+    assign o_done = o_done_cur;
+
+    // Todo: Sequential always block
+    always @(posedge i_clk or negedge i_rst_n) begin
+        if (!i_rst_n) begin
+            state       <= S_IDLE;
+            operand_a   <= 0;
+            operand_b   <= 0;
+            inst        <= 0;
+            cnt         <= 0;
+            o_data_cur  <= 0;
+            o_done_cur  <= 0;
+        end
+        else begin
+            state       <= state_nxt;
+            operand_a   <= operand_a_nxt;
+            operand_b   <= operand_b_nxt;
+            inst        <= inst_nxt;
+            cnt         <= cnt_nxt;
+            o_data_cur  <= o_data_nxt;
+            o_done_cur  <= o_done_nxt;
+        end
+    end
 endmodule
 
 module Cache#(
