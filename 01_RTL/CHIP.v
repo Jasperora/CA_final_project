@@ -100,13 +100,14 @@ module CHIP #(                                                                  
 
         reg [BIT_W-1:0] rdata1, rdata2;
 
-        wire Branch;
-        wire MemRead;
-        wire MemtoReg;
-        wire [1:0] ALUOp;
-        wire MemWrite;
         wire ALUSrc;
+        wire MemtoReg;
         wire RegWrite;
+        wire MemRead;
+        wire MemWrite;
+        wire Branch;
+        wire [1:0] ALUOp;
+        wire [3:0] ALU_control_input;
 
 // ------------------------------------------------------------------------------------------------------------------------------------------------------
 // Continuous Assignment
@@ -119,6 +120,11 @@ module CHIP #(                                                                  
         assign MemRead = (i_IMEM_data[6:0]==7'b0000011);
         assign MemWrite = (i_IMEM_data[6:0]==7'b0100011);
         assign Branch = (i_IMEM_data[6:0]==7'b1100011);
+        assign ALUOp[1] = (i_IMEM_data[6:0]==7'b0110011);
+        assign ALUOp[0] = (i_IMEM_data[6:0]==7'b1100011);
+        
+        assign ALU_control_input = (ALUOp==2'b00 ? 4'b0010 : (ALUOp[0]==1'b1 ? 4'b0110 : (i_IMEM_data[14:12]==3'b000 ? 4'b0010 : \
+            (i_IMEM_data[30]==1'b1 ? 4'b0110 : (i_IMEM_data[[14:12]==3'b111 ? 4'b0000 : 4'b0001])))));
 
 // ------------------------------------------------------------------------------------------------------------------------------------------------------
 // Submoddules
