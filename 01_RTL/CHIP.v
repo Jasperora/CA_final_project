@@ -221,28 +221,33 @@ module ALU(
     localparam CI_ADD   = 4'b0010;
     localparam CI_SUB   = 4'b0110;
 
-    case (aluCtrl)
-        CI_AND: begin
-        end
+    if (!i_valid)begin
+    end
+    else begin
+        case (aluCtrl)
+            CI_AND: begin
+                o_data_r_nxt
+            end
 
-        CI_OR: begin
-        end
+            CI_OR: begin
+            end
 
-        CI_ADD: begin
-        end
+            CI_ADD: begin
+            end
 
-        CI_SUB: begin
-        end
-    endcase    
+            CI_SUB: begin
+            end
+        endcase    
 
-    always @(posedge i_clk or negedge i_rst_n)begin
-        if(!i_rst_n)begin
-            o_done_r = 0;
-            o_data_r = 0;
-        end
-        else begin
-            o_done_r <= o_data_r_nxt;
-            o_data_r <= o_data_r_nxt;
+        always @(posedge i_clk or negedge i_rst_n)begin
+            if(!i_rst_n)begin
+                o_done_r = 0;
+                o_data_r = 0;
+            end
+            else begin
+                o_done_r <= o_data_r_nxt;
+                o_data_r <= o_data_r_nxt;
+            end
         end
     end
 
