@@ -124,6 +124,9 @@ module CHIP #(                                                                  
 
         reg [BIT_W-1:0] imm;
         wire [BIT_W-1:0] rdata1, rdata2;
+        reg [BIT_W-1:0] rdatad, rdatad_nxt;
+
+        reg [BIT_W-1:0] DMEM_wdata, DMEM_wdata_nxt;
 
         wire ALUSrc;
         wire MemtoReg;
@@ -186,7 +189,7 @@ module CHIP #(                                                                  
     // Todo: any combinational/sequential circuit
 
     // FSM
-    always@(*)begin
+    always@(*)begin // state
         case (i_IMEM_data[6:0])
             auipc_opcode: begin
                 state_nxt = S_AUIPC;
@@ -272,7 +275,7 @@ module CHIP #(                                                                  
         endcase
     end
 
-    always@(*)begin
+    always@(*)begin // action
         imm = 0;
 
         case (state)
@@ -282,6 +285,7 @@ module CHIP #(                                                                  
 
             S_AUIPC: begin
                 imm = {i_IMEM_data[31:12], 12'b0};
+
             end
 
             S_JAL: begin
@@ -365,10 +369,12 @@ module CHIP #(                                                                  
 
             S_AUIPC: begin
                 imm = {i_IMEM_data[31:12], 12'b0};
+                rdatad_nxt = $signed(rdata1) + $signed(imm);
             end
 
             S_JAL: begin
                 imm = {11'b0, i_IMEM_data[31], i_IMEM_data[19:12], i_IMEM_data[20], i_IMEM_data[30:21], 1'b0};
+                
             end
 
             S_JALR: begin
@@ -442,10 +448,12 @@ module CHIP #(                                                                  
         if (!i_rst_n) begin
             PC <= 32'h00010000; // Do not modify this value!!!
             state <= 5'd0;
+            rdatad <= 32'b0;
         end
         else begin
             PC <= next_PC;
             state <= next_state;
+            rdatad <= rdatad_nxt;
         end
     end
 endmodule
