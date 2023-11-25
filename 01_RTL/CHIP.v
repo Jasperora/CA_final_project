@@ -71,6 +71,7 @@ module CHIP #(                                                                  
     parameter sw_funct3    = 3'b010;
     parameter sw_opcode    = 7'b0100011;
     // mul
+    parameter mul_funct7   = 7'b0000001;
     parameter mul_funct3   = 3'b000;
     parameter mul_opcode   = 7'b0110011;
     // beq
@@ -116,7 +117,7 @@ module CHIP #(                                                                  
 // ------------------------------------------------------------------------------------------------------------------------------------------------------
     
     // TODO: any declaration
-    reg [4:0] state, next_state;
+    reg [4:0] state, state_nxt;
 
     // instruction memory
     reg [BIT_W-1:0] PC, next_PC;
@@ -149,6 +150,7 @@ module CHIP #(                                                                  
     // operation
     wire muldiv_done;
     wire [BIT_W-1:0] muldiv_result;
+    wire muldiv_valid = state==S_MUL ? 1 : 0;
 
     // finish procedure
     reg finish, finish_nxt;
@@ -180,6 +182,7 @@ module CHIP #(                                                                  
     assign o_DMEM_addr = DMEM_addr;
     assign o_DMEM_wdata = DMEM_wdata;
 
+
 // ------------------------------------------------------------------------------------------------------------------------------------------------------
 // Submoddules
 // ------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -200,12 +203,11 @@ module CHIP #(                                                                  
     MULDIV_unit muldiv0(
         .i_clk(i_clk),
         .i_rst_n(i_rst_n),
-        .i_valid(state==S_MUL ? 1'b1 : 1'b0),
+        .i_valid(muldiv_valid),
         .i_A(rdata1),
         .i_B(rdata2),
-        .i_inst(1'b0),
         .o_data(muldiv_result),
-        .o_done(muldiv_done),
+        .o_done(muldiv_done)
     );
 
 // ------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -251,7 +253,7 @@ module CHIP #(                                                                  
                                     {and_funct7, and_funct3}: begin
                                         state_nxt = S_AND;
                                     end
-                                    {xor_funct7, xor_functs}: begin
+                                    {xor_funct7, xor_funct3}: begin
                                         state_nxt = S_XOR;
                                     end
                                     {mul_funct7, mul_funct3}: begin
@@ -318,7 +320,7 @@ module CHIP #(                                                                  
             end
 
             S_MUL: begin
-                if (mul_div_done): begin
+                if (muldiv_done) begin
                     state_nxt = S_IDLE;
                 end
                 else begin
@@ -363,16 +365,16 @@ module CHIP #(                                                                  
             end
 
             S_AND: begin
-                rdata_nxt = rdata1 & rdata2;
+                rdatad_nxt = rdata1 & rdata2;
             end
 
             S_XOR: begin
-                rdata_nxt = rdata1 ^ rdata2;
+                rdatad_nxt = rdata1 ^ rdata2;
             end
 
             S_ADDI: begin
                 imm = {20'b0, i_IMEM_data[31:20]};
-                rdata_nxt = $signed(rdata1) + $signed(imm);
+                rdatad_nxt = $signed(rdata1) + $signed(imm);
             end
 
             S_SLLI: begin
@@ -439,7 +441,7 @@ module CHIP #(                                                                  
             finish <= 0;
         end
         else begin
-            state <= next_state;
+            state <= state_nxt;
 
             PC <= next_PC;
             IMEM_cen <= IMEM_cen_nxt;
@@ -499,7 +501,9 @@ module Reg_file(i_clk, i_rst_n, wen, rs1, rs2, rd, wdata, rdata1, rdata2);
     end
 endmodule
 
-module MULDIV_unit(
+module MULDIV_unit #(
+    parameter BIT_W = 32    
+)(
     // TODO: port declaration
         input                       i_clk,   // clock
         input                       i_rst_n, // reset
@@ -507,7 +511,6 @@ module MULDIV_unit(
         input                       i_valid, // input valid signal
         input [BIT_W - 1 : 0]       i_A,     // input operand A
         input [BIT_W - 1 : 0]       i_B,     // input operand B
-        input                      i_inst,  // instruction
 
         output [2*BIT_W - 1 : 0]    o_data,  // output value
         output                      o_done   // output valid signal
@@ -518,24 +521,23 @@ module MULDIV_unit(
     // ======== choose your FSM style ==========
     // 1. FSM based on operation cycles
     parameter S_IDLE           = 2'd0;
-    parameter S_ONE_CYCLE_OP   = 2'd1;
     parameter S_MULTI_CYCLE_OP = 2'd2;
 
 // Wires & Regs
     // Todo
     // state
-    reg  [         1: 0] state, state_nxt; // remember to expand the bit width if you want to add more states!
+    reg  [           1: 0] state, state_nxt; // remember to expand the bit width if you want to add more states!
     // load input
-    reg  [  DATA_W-1: 0] operand_a, operand_a_nxt;
-    reg  [  DATA_W-1: 0] operand_b, operand_b_nxt;
-    reg  [         2: 0] inst, inst_nxt;
+    reg  [     BIT_W-1: 0] operand_a, operand_a_nxt;
+    reg  [     BIT_W-1: 0] operand_b, operand_b_nxt;
+    reg  [           2: 0] inst, inst_nxt;
 
 // Wire Assignments
     // Todo
     // Counter
     reg  [4:0] cnt, cnt_nxt;
     // Output
-    reg  [2*DATA_W - 1 : 0] o_data_cur, o_data_nxt;
+    reg  [2*BIT_W - 1 : 0] o_data_cur, o_data_nxt;
     reg                     o_done_cur, o_done_nxt;
     
 // Always Combination
@@ -544,12 +546,10 @@ module MULDIV_unit(
         if (i_valid) begin
             operand_a_nxt = i_A;
             operand_b_nxt = i_B;
-            inst_nxt      = i_inst;
         end
         else begin
             operand_a_nxt = operand_a;
             operand_b_nxt = operand_b;
-            inst_nxt      = inst;
         end
     end
     // Todo: FSM
@@ -585,74 +585,34 @@ module MULDIV_unit(
     end
     // Todo: ALU output
     always @(*) begin
-        if (state==S_MULTI_CYCLE_OP) begin
-            case(inst)
-                1'b0: begin // MUL A: multiplicand, B: multiplier
-                    if (cnt==0) begin
-                        if (operand_b[0]==1)begin
-                            o_data_nxt = {operand_a, operand_b} >> 1;
-                        end
-                        else begin
-                            o_data_nxt = {{DATA_W{1'b0}}, operand_b} >> 1;
-                        end
-                        o_done_nxt = 0;
-                    end
-                    else if (cnt<31) begin
-                        if (o_data_cur[0]==1) begin
-                            o_data_nxt = {{1'b0, o_data_cur[2*DATA_W-1:DATA_W]} + {1'b0, operand_a}, o_data_cur[DATA_W-1:1]};
-                        end
-                        else begin
-                            o_data_nxt = o_data_cur >> 1;
-                        end
-                        o_done_nxt = 0;
-                    end
-                    else begin
-                        if (o_data_cur[0]==1) begin
-                            o_data_nxt = {{1'b0, o_data_cur[2*DATA_W-1:DATA_W]} + {1'b0, operand_a}, o_data_cur[DATA_W-1:1]};
-                        end
-                        else begin
-                            o_data_nxt = o_data_cur >> 1;
-                        end
-                        o_done_nxt = 1;
-                    end
+        if (state==S_MULTI_CYCLE_OP) begin // MUL A: multiplicand, B: multiplier
+            if (cnt==0) begin
+                if (operand_b[0]==1)begin
+                    o_data_nxt = {operand_a, operand_b} >> 1;
                 end
-                1'b1: begin // DIV
-                    if (cnt==0) begin
-                        if (operand_a[DATA_W-1] < operand_b) begin
-                            o_data_nxt = operand_a << 2;
-                        end
-                        else begin
-                            o_data_nxt = (({{(DATA_W-1){1'b0}}, operand_a, 1'b0}-{operand_b, {DATA_W{1'b0}}}) << 1) + 1;
-                        end
-                        o_done_nxt = 0;
-                    end
-                    else if (cnt<31) begin
-                        if (o_data_cur[2*DATA_W-1:DATA_W] < operand_b) begin // shift_l
-                            o_data_nxt = o_data_cur << 1;
-                        end
-                        else begin // // sub, shift_l
-                            o_data_nxt[2*DATA_W-1:DATA_W+1] = o_data_cur[2*DATA_W-1:DATA_W]-operand_b;
-                            o_data_nxt[DATA_W:0] = (o_data_cur[DATA_W-1:0] << 1) + 1;
-                        end
-                        o_done_nxt = 0;
-                    end
-                    else begin // cnt==31
-                        if (o_data_cur[2*DATA_W-1:DATA_W] < operand_b) begin // shift_l, shift_r(left_half)
-                            o_data_nxt[2*DATA_W-1:DATA_W] = o_data_cur[2*DATA_W-1:DATA_W];
-                            o_data_nxt[DATA_W-1:0] = o_data_cur[DATA_W-1:0] << 1;
-                        end
-                        else begin // sub, shift_l, shift_r(left_half)
-                            o_data_nxt[2*DATA_W-1:DATA_W] = o_data_cur[2*DATA_W-1:DATA_W] - operand_b;
-                            o_data_nxt[DATA_W-1:0] = (o_data_cur[DATA_W-1:0] << 1) + 1;
-                        end
-                        o_done_nxt = 1;
-                    end
+                else begin
+                    o_data_nxt = {{BIT_W{1'b0}}, operand_b} >> 1;
                 end
-                default: begin
-                    o_data_nxt = o_data_cur;
-                    o_done_nxt = o_done_cur;
+                o_done_nxt = 0;
+            end
+            else if (cnt<31) begin
+                if (o_data_cur[0]==1) begin
+                    o_data_nxt = {{1'b0, o_data_cur[2*BIT_W-1:BIT_W]} + {1'b0, operand_a}, o_data_cur[BIT_W-1:1]};
                 end
-            endcase
+                else begin
+                    o_data_nxt = o_data_cur >> 1;
+                end
+                o_done_nxt = 0;
+            end
+            else begin
+                if (o_data_cur[0]==1) begin
+                    o_data_nxt = {{1'b0, o_data_cur[2*BIT_W-1:BIT_W]} + {1'b0, operand_a}, o_data_cur[BIT_W-1:1]};
+                end
+                else begin
+                    o_data_nxt = o_data_cur >> 1;
+                end
+                o_done_nxt = 1;
+            end
         end
         else begin
             o_data_nxt = 0;
@@ -670,7 +630,6 @@ module MULDIV_unit(
             state       <= S_IDLE;
             operand_a   <= 0;
             operand_b   <= 0;
-            inst        <= 0;
             cnt         <= 0;
             o_data_cur  <= 0;
             o_done_cur  <= 0;
@@ -679,7 +638,6 @@ module MULDIV_unit(
             state       <= state_nxt;
             operand_a   <= operand_a_nxt;
             operand_b   <= operand_b_nxt;
-            inst        <= inst_nxt;
             cnt         <= cnt_nxt;
             o_data_cur  <= o_data_nxt;
             o_done_cur  <= o_done_nxt;
