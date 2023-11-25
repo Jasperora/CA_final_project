@@ -183,6 +183,8 @@ module CHIP #(                                                                  
     assign o_DMEM_addr = DMEM_addr;
     assign o_DMEM_wdata = DMEM_wdata;
 
+    // finish
+    assign o_finish = finish;
 
 // ------------------------------------------------------------------------------------------------------------------------------------------------------
 // Submoddules
