@@ -91,25 +91,25 @@ module CHIP #(                                                                  
     parameter ecall        = 32'b0000_0000_0001_0000_0000_0000_0111_0011;
 
     // state
-    parameter S_IDLE = 5'd0;
+    parameter S_IDLE  = 5'd0;
     parameter S_AUIPC = 5'd1;
-    parameter S_JAL = 5'd2;
-    parameter S_JALR = 5'd3;
-    parameter S_ADD = 5'd4;
-    parameter S_SUB = 5'd5;
-    parameter S_AND = 5'd6;
-    parameter S_XOR = 5'd7;
-    parameter S_ADDI = 5'd8;
-    parameter S_SLLI = 5'd9;
-    parameter S_SLTI = 5'd10;
-    parameter S_SRAI = 5'd11;
-    parameter S_LW = 5'd12;
-    parameter S_SW = 5'd13;
-    parameter S_MUL = 5'd14;
-    parameter S_BEQ = 5'd15;
-    parameter S_BGE = 5'd16;
-    parameter S_BLT = 5'd17;
-    parameter S_BNE = 5'd18;
+    parameter S_JAL   = 5'd2;
+    parameter S_JALR  = 5'd3;
+    parameter S_ADD   = 5'd4;
+    parameter S_SUB   = 5'd5;
+    parameter S_AND   = 5'd6;
+    parameter S_XOR   = 5'd7;
+    parameter S_ADDI  = 5'd8;
+    parameter S_SLLI  = 5'd9;
+    parameter S_SLTI  = 5'd10;
+    parameter S_SRAI  = 5'd11;
+    parameter S_LW    = 5'd12;
+    parameter S_SW    = 5'd13;
+    parameter S_MUL   = 5'd14;
+    parameter S_BEQ   = 5'd15;
+    parameter S_BGE   = 5'd16;
+    parameter S_BLT   = 5'd17;
+    parameter S_BNE   = 5'd18;
     parameter S_ECALL = 5'd19;
 
 // ------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -135,7 +135,8 @@ module CHIP #(                                                                  
     reg DMEM_cen, DMEM_cen_nxt;
     reg DMEM_wen, DMEM_wen_nxt;      
     reg [BIT_W-1:0] DMEM_addr, DMEM_addr_nxt;
-    reg [BIT_W-1:0] DMEM_wdata, DMEM_wdata_nxt; 
+    reg [BIT_W-1:0] DMEM_wdata, DMEM_wdata_nxt;
+    reg [BIT_W-1:0] DMEM_rdata, DMEM_rdata_nxt;
 
     // instruction
     wire ALUSrc;
@@ -209,6 +210,25 @@ module CHIP #(                                                                  
         .o_data(muldiv_result),
         .o_done(muldiv_done)
     );
+
+    // Cache cache0(
+    //     .i_clk(i_clk),
+    //     .i_rst_n(i_rst_n),
+    //     .i_proc_cen(o_DMEM_cen),
+    //     .i_proc_wen(o_DMEM_wen),
+    //     .i_proc_addr(o_DMEM_addr),
+    //     .i_proc_wdata(o_DMEM_wdata),
+    //     .o_proc_rdata(i_DMEM_rdata),
+    //     .o_proc_stall(i_DMEM_stall),
+    //     .i_proc_finish(o_proc_finish),
+    //     .o_cache_finish(i_cache_finish),
+    //     .o_mem_cen(mem_cen),
+    //     .o_mem_wen(mem_wen),
+    //     .o_mem_addr(mem_addr),
+    //     .o_mem_wdata(mem_wdata),
+    //     .i_mem_rdata(mem_rdata),
+    //     .i_mem_stall(mem_stall)
+    // );
 
 // ------------------------------------------------------------------------------------------------------------------------------------------------------
 // Always Blocks
@@ -448,6 +468,7 @@ module CHIP #(                                                                  
             DMEM_cen <= 1;
             DMEM_addr <= 0;
             DMEM_wdata <= 0;
+            DMEM_rdata <= 0;
 
             finish <= 0;
         end
@@ -462,6 +483,7 @@ module CHIP #(                                                                  
             DMEM_cen <= DMEM_cen_nxt;
             DMEM_addr <= DMEM_addr_nxt;
             DMEM_wdata <= DMEM_wdata_nxt;
+            DMEM_rdata <= DMEM_rdata_nxt;
 
             finish <= finish_nxt;
         end
