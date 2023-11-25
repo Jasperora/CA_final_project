@@ -30,86 +30,86 @@ module CHIP #(                                                                  
 
     // TODO: any declaration
     // auipc
-    parameter auipc_opcode = 7'b0010111
+    parameter auipc_opcode = 7'b0010111;
     // jal
-    parameter jal_opcode   = 7'b1101111
+    parameter jal_opcode   = 7'b1101111;
     // jalr
-    parameter jalr_opcode  = 7'b1100111
+    parameter jalr_opcode  = 7'b1100111;
     // add
-    parameter add_funct7   = 7'b0000000
-    parameter add_funct3   = 3'b000
-    parameter add_opcode   = 7'b0110011
+    parameter add_funct7   = 7'b0000000;
+    parameter add_funct3   = 3'b000;
+    parameter add_opcode   = 7'b0110011;
     // sub
-    parameter sub_funct7   = 7'b0100000
-    parameter sub_funct3   = 3'b000
-    parameter sub_opcode   = 7'b0110011
+    parameter sub_funct7   = 7'b0100000;
+    parameter sub_funct3   = 3'b000;
+    parameter sub_opcode   = 7'b0110011;
     // and
-    parameter and_funct7   = 7'b0000000
-    parameter and_funct3   = 3'b111
-    parameter and_opcode   = 7'b0110011
+    parameter and_funct7   = 7'b0000000;
+    parameter and_funct3   = 3'b111;
+    parameter and_opcode   = 7'b0110011;
     // xor
-    parameter xor_funct7   = 7'b0000000
-    parameter xor_funct3   = 3'b100
-    parameter xor_opcode   = 7'b0110011
+    parameter xor_funct7   = 7'b0000000;
+    parameter xor_funct3   = 3'b100;
+    parameter xor_opcode   = 7'b0110011;
     // addi
-    parameter addi_funct3  = 3'b000
-    parameter addi_opcode  = 7'b0010011
+    parameter addi_funct3  = 3'b000;
+    parameter addi_opcode  = 7'b0010011;
     // slli
-    parameter slli_funct3  = 3'b001
-    parameter slli_opcode  = 7'b0010011
+    parameter slli_funct3  = 3'b001;
+    parameter slli_opcode  = 7'b0010011;
     // slti
-    parameter slti_funct3  = 3'b010
-    parameter slti_opcode  = 7'b0010011
+    parameter slti_funct3  = 3'b010;
+    parameter slti_opcode  = 7'b0010011;
     // srai
-    parameter srai_funct7  = 7'b0100000
-    parameter srai_funct3  = 3'b101
-    parameter srai_opcode  = 7'b0010011
+    parameter srai_funct7  = 7'b0100000;
+    parameter srai_funct3  = 3'b101;
+    parameter srai_opcode  = 7'b0010011;
     // lw
-    parameter lw_funct3    = 3'b010
-    parameter lw_opcode    = 7'b0000011
+    parameter lw_funct3    = 3'b010;
+    parameter lw_opcode    = 7'b0000011;
     // sw
-    parameter sw_funct3    = 3'b010
-    parameter sw_opcode    = 7'b0100011
+    parameter sw_funct3    = 3'b010;
+    parameter sw_opcode    = 7'b0100011;
     // mul
-    parameter mul_funct3   = 3'b000
-    parameter mul_opcode   = 7'b0110011
+    parameter mul_funct3   = 3'b000;
+    parameter mul_opcode   = 7'b0110011;
     // beq
-    parameter beq_funct3   = 3'b000
-    parameter beq_opcode   = 7'b1100011
+    parameter beq_funct3   = 3'b000;
+    parameter beq_opcode   = 7'b1100011;
     // bge
-    parameter bge_funct3   = 3'b101
-    parameter bge_opcode   = 7'b1100011
+    parameter bge_funct3   = 3'b101;
+    parameter bge_opcode   = 7'b1100011;
     // blt
-    parameter blt_funct3   = 3'b100
-    parameter blt_opcode   = 7'b1100011
+    parameter blt_funct3   = 3'b100;
+    parameter blt_opcode   = 7'b1100011;
     // bne
-    parameter bne_funct3   = 3'b001
-    parameter bne_opcode   = 7'b1100011
+    parameter bne_funct3   = 3'b001;
+    parameter bne_opcode   = 7'b1100011;
     // ecall
-    parameter ecall_opcode = 7'b1110011
-    parameter ecall        = 32'b0000_0000_0001_0000_0000_0000_0111_0011
+    parameter ecall_opcode = 7'b1110011;
+    parameter ecall        = 32'b0000_0000_0001_0000_0000_0000_0111_0011;
 
     // state
-    parameter S_IDLE = 5'd0
-    parameter S_AUIPC = 5'd1
-    parameter S_JAL = 5'd2
-    parameter S_JALR = 5'd3
-    parameter S_ADD = 5'd4
-    parameter S_SUB = 5'd5
-    parameter S_AND = 5'd6
-    parameter S_XOR = 5'd7
-    parameter S_ADDI = 5'd8
-    parameter S_SLLI = 5'd9
-    parameter S_SLTI = 5'd10
-    parameter S_SRAI = 5'd11
-    parameter S_LW = 5'd12
-    parameter S_SW = 5'd13
-    parameter S_MUL = 5'd14
-    parameter S_BEQ = 5'd15
-    parameter S_BGE = 5'd16
-    parameter S_BLT = 5'd17
-    parameter S_BNE = 5'd18
-    parameter S_ECALL = 5'd19
+    parameter S_IDLE = 5'd0;
+    parameter S_AUIPC = 5'd1;
+    parameter S_JAL = 5'd2;
+    parameter S_JALR = 5'd3;
+    parameter S_ADD = 5'd4;
+    parameter S_SUB = 5'd5;
+    parameter S_AND = 5'd6;
+    parameter S_XOR = 5'd7;
+    parameter S_ADDI = 5'd8;
+    parameter S_SLLI = 5'd9;
+    parameter S_SLTI = 5'd10;
+    parameter S_SRAI = 5'd11;
+    parameter S_LW = 5'd12;
+    parameter S_SW = 5'd13;
+    parameter S_MUL = 5'd14;
+    parameter S_BEQ = 5'd15;
+    parameter S_BGE = 5'd16;
+    parameter S_BLT = 5'd17;
+    parameter S_BNE = 5'd18;
+    parameter S_ECALL = 5'd19;
 
 // ------------------------------------------------------------------------------------------------------------------------------------------------------
 // Wires and Registers
@@ -121,9 +121,9 @@ module CHIP #(                                                                  
     // instruction memory
     reg [BIT_W-1:0] PC, next_PC;
     reg IMEM_cen, IMEM_cen_nxt;
-    // wire mem_cen, mem_wen;
-    // wire [BIT_W-1:0] mem_addr, mem_wdata, mem_rdata;
-    // wire mem_stall;
+    wire mem_cen, mem_wen;
+    wire [BIT_W-1:0] mem_addr, mem_wdata, mem_rdata;
+    wire mem_stall;
 
     // register
     reg [BIT_W-1:0] imm;
@@ -163,7 +163,7 @@ module CHIP #(                                                                  
     assign o_IMEM_addr = PC;
     assign o_IMEM_cen = IMEM_cen; // load instruction
 
-    // data memory
+    // control signal
     assign ALUSrc = (i_IMEM_data[6:0]==7'b0000011) || (i_IMEM_data[6:0]==7'b0100011);
     assign MemtoReg = (i_IMEM_data[6:0]==7'b0000011);
     assign RegWrite = (i_IMEM_data[6:0]==7'b0110011) || (i_IMEM_data[6:0]==7'b0000011);
@@ -175,6 +175,7 @@ module CHIP #(                                                                  
     assign ALU_control_input = (ALUOp==2'b00 ? 4'b0010 : (ALUOp[0]==1'b1 ? 4'b0110 : (i_IMEM_data[14:12]==3'b000 ? 4'b0010 : \
         (i_IMEM_data[30]==1'b1 ? 4'b0110 : (i_IMEM_data[[14:12]==3'b111 ? 4'b0000 : 4'b0001])))));
 
+    // data memory
     assign o_DMEM_cen = DMEM_cen;
     assign o_DMEM_wen = DMEM_wen;
     assign o_DMEM_addr = DMEM_addr;
@@ -356,20 +357,23 @@ module CHIP #(                                                                  
 
             S_ADD: begin
                 rdatad_nxt = $signed(rdata1) + $signed(rdata2);
-                
             end
 
             S_SUB: begin
+                rdatad_nxt = $signed(rdata1) - $signed(rdata2);
             end
 
             S_AND: begin
+                rdata_nxt = rdata1 & rdata2;
             end
 
             S_XOR: begin
+                rdata_nxt = rdata1 ^ rdata2;
             end
 
             S_ADDI: begin
                 imm = {20'b0, i_IMEM_data[31:20]};
+                rdata_nxt = $signed(rdata1) + $signed(imm);
             end
 
             S_SLLI: begin
