@@ -352,6 +352,10 @@ module CHIP #(                                                                  
     always @(*) begin // action
         imm = 0;
         rdatad_nxt = rdatad;
+        PC_nxt = PC + 4;
+        IMEM_cen_nxt = 1;
+        DMEM_cen_nxt = 1;
+        finish_nxt = finish;
 
         case (state)
             S_IDLE: begin
