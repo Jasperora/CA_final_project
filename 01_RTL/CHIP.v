@@ -186,7 +186,7 @@ module CHIP #(                                                                  
 
 // ------------------------------------------------------------------------------------------------------------------------------------------------------
 // Submoddules
-// ------------------------------------------------------------------------------------------------------------------------------------------------------
+// ------------------------------------ ------------------------------------------------------------------------------------------------------------------
 
     // TODO: Reg_file wire connection
     Reg_file reg0(               
@@ -240,7 +240,7 @@ module CHIP #(                                                                  
 
     always @(*) begin // state
         case (state)
-            S_IDLE: begin
+            default: begin
                 case (i_IMEM_data[6:0])
                     auipc_opcode: begin
                         state_nxt = S_AUIPC;
@@ -338,13 +338,8 @@ module CHIP #(                                                                  
                     end
                 endcase
             end
-
             S_MUL: begin
                 state_nxt = muldiv_done ? S_IDLE : S_MUL;
-            end
-            
-            default: begin
-                state_nxt = S_IDLE;
             end
         endcase
     end
@@ -370,7 +365,7 @@ module CHIP #(                                                                  
             S_JAL: begin
                 imm = {11'b0, i_IMEM_data[31], i_IMEM_data[19:12], i_IMEM_data[20], i_IMEM_data[30:21], 1'b0};
                 rdatad_nxt = $signed(PC) + $signed(4);
-                PC_nxt = $signed(PC) + $signed({imm, 1'b0});
+                PC_nxt = $signed(PC) + $signed(imm);
             end
 
             S_JALR: begin
@@ -416,12 +411,15 @@ module CHIP #(                                                                  
             end
 
             S_LW: begin
-                imm = {20'b0, i_IMEM_data[31:20]};
+                imm = {{20{i_IMEM_data[31]}}, i_IMEM_data[31:20]};
+                // DMEM_addr_nxt = $signed(rdata1) + $signed(imm);
+                DMEM_addr = $signed(rdata1) + $signed(imm);
                 rdatad_nxt = i_DMEM_rdata;
             end
 
             S_SW: begin
                 imm = {20'b0, i_IMEM_data[31:25], i_IMEM_data[12:8]};
+                DMEM_addr = $signed(rdata1) + $signed(imm);
                 DMEM_wdata_nxt = rdata2;
             end
 
