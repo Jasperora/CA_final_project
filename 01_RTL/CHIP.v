@@ -196,7 +196,7 @@ module CHIP #(                                                                  
         .rs1    (i_IMEM_data[19:15]),                
         .rs2    (i_IMEM_data[24:20]),                
         .rd     (i_IMEM_data[11:7]),                 
-        .wdata  (rdatad),             
+        .wdata  (rdatad_nxt),             
         .rdata1 (rdata1),           
         .rdata2 (rdata2)
     );
@@ -239,20 +239,11 @@ module CHIP #(                                                                  
     // FSM
 
     always @(*) begin // state
-        case (i_IMEM_data[6:0])
-            auipc_opcode: begin
-                state_nxt = S_AUIPC;
-            end
-            jal_opcode: begin
-                state_nxt = S_JAL;
-            end
-            jalr_opcode: begin
-                state_nxt = S_JALR;
-            end
-            add_opcode: begin
-                case({i_IMEM_data[31:25], i_IMEM_data[14:12]})
-                    {add_funct7, add_funct3}: begin
-                        state_nxt = S_ADD;
+        case (state)
+            S_IDLE: begin
+                case (i_IMEM_data[6:0])
+                    auipc_opcode: begin
+                        state_nxt = S_AUIPC;
                     end
                     jal_opcode: begin
                         state_nxt = S_JAL;
@@ -265,74 +256,95 @@ module CHIP #(                                                                  
                             {add_funct7, add_funct3}: begin
                                 state_nxt = S_ADD;
                             end
-                            {sub_funct7, sub_funct3}: begin
-                                state_nxt = S_SUB;
+                            jal_opcode: begin
+                                state_nxt = S_JAL;
                             end
-                            {and_funct7, and_funct3}: begin
-                                state_nxt = S_AND;
+                            jalr_opcode: begin
+                                state_nxt = S_JALR;
                             end
-                            {xor_funct7, xor_funct3}: begin
-                                state_nxt = S_XOR;
+                            add_opcode: begin
+                                case({i_IMEM_data[31:25], i_IMEM_data[14:12]})
+                                    {add_funct7, add_funct3}: begin
+                                        state_nxt = S_ADD;
+                                    end
+                                    {sub_funct7, sub_funct3}: begin
+                                        state_nxt = S_SUB;
+                                    end
+                                    {and_funct7, and_funct3}: begin
+                                        state_nxt = S_AND;
+                                    end
+                                    {xor_funct7, xor_funct3}: begin
+                                        state_nxt = S_XOR;
+                                    end
+                                    {mul_funct7, mul_funct3}: begin
+                                        state_nxt = S_MUL;
+                                    end
+                                    default: begin
+                                        state_nxt = state;
+                                    end
+                                endcase
                             end
-                            {mul_funct7, mul_funct3}: begin
-                                state_nxt = S_MUL;
+                            addi_opcode: begin
+                                case(i_IMEM_data[14:12])
+                                    addi_funct3: begin
+                                        state_nxt = S_ADDI;
+                                    end
+                                    slli_funct3: begin
+                                        state_nxt = S_SLLI;
+                                    end
+                                    slti_funct3: begin
+                                        state_nxt = S_SLTI;
+                                    end
+                                    srai_funct3: begin
+                                        state_nxt = S_SRAI;
+                                    end
+                                    default: begin
+                                        state_nxt = state;
+                                    end
+                                endcase
+                            end
+                            lw_opcode: begin
+                                state_nxt = S_LW;
+                            end
+                            sw_opcode: begin
+                                state_nxt = S_SW;
+                            end
+                            bge_opcode: begin
+                                case(i_IMEM_data[6:0])
+                                    bge_funct3: begin
+                                        state_nxt = S_BGE;
+                                    end
+                                    beq_funct3: begin
+                                        state_nxt = S_BEQ;
+                                    end
+                                    blt_funct3: begin
+                                        state_nxt = S_BLT;
+                                    end
+                                    bne_funct3: begin
+                                        state_nxt = S_BNE;
+                                    end
+                                    default: begin
+                                        state_nxt = state;
+                                    end
+                                endcase
+                            end
+                            ecall_opcode: begin
+                                state_nxt = S_ECALL;
                             end
                             default: begin
                                 state_nxt = state;
                             end
                         endcase
-                    end
-                    addi_opcode: begin
-                        case(i_IMEM_data[14:12])
-                            addi_funct3: begin
-                                state_nxt = S_ADDI;
-                            end
-                            slli_funct3: begin
-                                state_nxt = S_SLLI;
-                            end
-                            slti_funct3: begin
-                                state_nxt = S_SLTI;
-                            end
-                            srai_funct3: begin
-                                state_nxt = S_SRAI;
-                            end
-                            default: begin
-                                state_nxt = state;
-                            end
-                        endcase
-                    end
-                    lw_opcode: begin
-                        state_nxt = S_LW;
-                    end
-                    sw_opcode: begin
-                        state_nxt = S_SW;
-                    end
-                    bge_opcode: begin
-                        case(i_IMEM_data[6:0])
-                            bge_funct3: begin
-                                state_nxt = S_BGE;
-                            end
-                            beq_funct3: begin
-                                state_nxt = S_BEQ;
-                            end
-                            blt_funct3: begin
-                                state_nxt = S_BLT;
-                            end
-                            bne_funct3: begin
-                                state_nxt = S_BNE;
-                            end
-                            default: begin
-                                state_nxt = state;
-                            end
-                        endcase
-                    end
-                    ecall_opcode: begin
-                        state_nxt = S_ECALL;
-                    end
-                    default: begin
-                        state_nxt = state;
                     end
                 endcase
+            end
+
+            S_MUL: begin
+                // TODO: state control
+            end
+
+            default: begin
+                state_nxt = S_IDLE;
             end
         endcase
     end
