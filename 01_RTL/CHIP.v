@@ -120,7 +120,7 @@ module CHIP #(                                                                  
     reg [4:0] state, state_nxt;
 
     // instruction memory
-    reg [BIT_W-1:0] PC, next_PC;
+    reg [BIT_W-1:0] PC, PC_nxt;
     reg IMEM_cen, IMEM_cen_nxt;
     wire mem_cen, mem_wen;
     wire [BIT_W-1:0] mem_addr, mem_wdata, mem_rdata;
@@ -320,12 +320,7 @@ module CHIP #(                                                                  
             end
 
             S_MUL: begin
-                if (muldiv_done) begin
-                    state_nxt = S_IDLE;
-                end
-                else begin
-                    state_nxt = S_MUL;
-                end
+                state_nxt = muldiv_done ? S_IDLE : S_MUL;
             end
             
             default: begin
@@ -345,15 +340,19 @@ module CHIP #(                                                                  
 
             S_AUIPC: begin
                 imm = {i_IMEM_data[31:12], 12'b0};
-                rdatad_nxt = $signed(rdata1) + $signed(imm);
+                rdatad_nxt = $signed(PC) + $signed(imm);
             end
 
             S_JAL: begin
                 imm = {11'b0, i_IMEM_data[31], i_IMEM_data[19:12], i_IMEM_data[20], i_IMEM_data[30:21], 1'b0};
+                rdatad_nxt = $signed(PC) + $signed(4);
+                PC_nxt = $signed(PC) + $signed({imm, 1'b0});
             end
 
             S_JALR: begin
                 imm = {20'b0, i_IMEM_data[31:20]};
+                rdatad_nxt = $signed(PC) + $signed(4);
+                PC_nxt = $signed(rdata1) + $signed(imm);
             end
 
             S_ADD: begin
@@ -378,41 +377,52 @@ module CHIP #(                                                                  
             end
 
             S_SLLI: begin
+                imm = i_IMEM_data[25:20];
+                rdatad_nxt = rdata1 << imm;
             end
 
             S_SLTI: begin
                 imm = {20'b0, i_IMEM_data[31:20]};
+                rdatad_nxt = (rdata1 < imm) ? 1 : 0;
             end
 
             S_SRAI: begin
+                imm = i_IMEM_data[24:20];
+                rdatad_nxt = rdata1 >>> imm;
             end
 
             S_LW: begin
                 imm = {20'b0, i_IMEM_data[31:20]};
-
+                rdatad_nxt = i_DMEM_rdata;
             end
 
             S_SW: begin
                 imm = {20'b0, i_IMEM_data[31:25], i_IMEM_data[12:8]};
+                DMEM_wdata_nxt = rdata2;
             end
 
             S_MUL: begin
+                rdatad_nxt = muldiv_done ? muldiv_result : rdatad;
             end
 
             S_BEQ: begin
                 imm = {20'b0, i_IMEM_data[31], i_IMEM_data[8], i_IMEM_data[30:25], i_IMEM_data[12:9]};
+                PC_nxt = ($signed(rdata1) == $signed(rdata2)) ? ($signed(PC) + $signed({imm, 1'b0})) : PC;
             end
 
             S_BGE: begin
                 imm = {20'b0, i_IMEM_data[31], i_IMEM_data[8], i_IMEM_data[30:25], i_IMEM_data[12:9]};
+                PC_nxt = ($signed(rdata1) >= $signed(rdata2)) ? ($signed(PC) + $signed({imm, 1'b0})) : PC;
             end
 
             S_BLT: begin
                 imm = {20'b0, i_IMEM_data[31], i_IMEM_data[8], i_IMEM_data[30:25], i_IMEM_data[12:9]};
+                PC_nxt = ($signed(rdata1) < $signed(rdata2)) ? ($signed(PC) + $signed({imm, 1'b0})) : PC;
             end
 
             S_BNE: begin
                 imm = {20'b0, i_IMEM_data[31], i_IMEM_data[8], i_IMEM_data[30:25], i_IMEM_data[12:9]};
+                PC_nxt = ($signed(rdata1) != $signed(rdata2)) ? ($signed(PC) + $signed({imm, 1'b0})) : PC;
             end
 
             S_ECALL: begin
@@ -443,7 +453,7 @@ module CHIP #(                                                                  
         else begin
             state <= state_nxt;
 
-            PC <= next_PC;
+            PC <= PC_nxt;
             IMEM_cen <= IMEM_cen_nxt;
 
             rdatad <= rdatad_nxt;
@@ -501,7 +511,7 @@ module Reg_file(i_clk, i_rst_n, wen, rs1, rs2, rd, wdata, rdata1, rdata2);
     end
 endmodule
 
-module MULDIV_unit #(
+module MULDIV_unit#(
     parameter BIT_W = 32    
 )(
     // TODO: port declaration
