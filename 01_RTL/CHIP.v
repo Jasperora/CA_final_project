@@ -406,14 +406,15 @@ module CHIP #(                                                                  
 
             S_LW: begin
                 imm = {{20{i_IMEM_data[31]}}, i_IMEM_data[31:20]};
-                // DMEM_addr_nxt = $signed(rdata1) + $signed(imm);
-                DMEM_addr = $signed(rdata1) + $signed(imm);
+                DMEM_addr_nxt = $signed(rdata1) + $signed(imm);
+                DMEM_cen_nxt = 1;
                 rdatad_nxt = i_DMEM_rdata;
             end
 
             S_SW: begin
-                imm = {20'b0, i_IMEM_data[31:25], i_IMEM_data[12:8]};
-                DMEM_addr = $signed(rdata1) + $signed(imm);
+                imm = {{20{i_IMEM_data[31]}}, i_IMEM_data[31:25], i_IMEM_data[12:8]};
+                DMEM_addr_nxt = $signed(rdata1) + $signed(imm);
+                DMEM_wen_nxt = 1;
                 DMEM_wdata_nxt = rdata2;
             end
 
