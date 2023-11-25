@@ -427,6 +427,7 @@ module CHIP #(                                                                  
 
             S_ECALL: begin
                 imm = {20'b0, i_IMEM_data[31:20]};
+                finish_nxt = 1;
             end
 
             default: begin
@@ -462,7 +463,7 @@ module CHIP #(                                                                  
             DMEM_addr <= DMEM_addr_nxt;
             DMEM_wdata <= DMEM_wdata_nxt;
 
-            finish <= finish;
+            finish <= finish_nxt;
         end
     end
 endmodule
