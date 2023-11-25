@@ -241,7 +241,7 @@ module Final_tb;
             $display("============================================================\n");
             $display("Success!");
             $display("The test result is .....PASS :)");
-            $display("Total execution cycle : %32d", cyc);
+            $display("Total execution cycle : %0d", cyc);
             $display("============================================================\n");
         end
 
