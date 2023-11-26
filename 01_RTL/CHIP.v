@@ -90,38 +90,14 @@ module CHIP #(                                                                  
     parameter ecall_opcode = 7'b1110011;
     parameter ecall        = 32'b0000_0000_0001_0000_0000_0000_0111_0011;
 
-    // state
-    parameter S_IDLE  = 5'd0;
-    parameter S_AUIPC = 5'd1;
-    parameter S_JAL   = 5'd2;
-    parameter S_JALR  = 5'd3;
-    parameter S_ADD   = 5'd4;
-    parameter S_SUB   = 5'd5;
-    parameter S_AND   = 5'd6;
-    parameter S_XOR   = 5'd7;
-    parameter S_ADDI  = 5'd8;
-    parameter S_SLLI  = 5'd9;
-    parameter S_SLTI  = 5'd10;
-    parameter S_SRAI  = 5'd11;
-    parameter S_LW    = 5'd12;
-    parameter S_SW    = 5'd13;
-    parameter S_MUL   = 5'd14;
-    parameter S_BEQ   = 5'd15;
-    parameter S_BGE   = 5'd16;
-    parameter S_BLT   = 5'd17;
-    parameter S_BNE   = 5'd18;
-    parameter S_ECALL = 5'd19;
-
 // ------------------------------------------------------------------------------------------------------------------------------------------------------
 // Wires and Registers
 // ------------------------------------------------------------------------------------------------------------------------------------------------------
     
     // TODO: any declaration
-    reg [4:0] state, state_nxt;
 
     // instruction memory
     reg [BIT_W-1:0] PC, PC_nxt;
-    reg IMEM_cen, IMEM_cen_nxt;
     wire mem_cen, mem_wen;
     wire [BIT_W-1:0] mem_addr, mem_wdata, mem_rdata;
     wire mem_stall;
@@ -151,7 +127,7 @@ module CHIP #(                                                                  
     // operation
     wire muldiv_done;
     wire [BIT_W-1:0] muldiv_result;
-    wire muldiv_valid = state==S_MUL ? 1 : 0;
+    reg muldiv_valid, muldiv_valid_nxt;
 
     // finish procedure
     reg finish, finish_nxt;
@@ -164,17 +140,17 @@ module CHIP #(                                                                  
 
     // instruction memory
     assign o_IMEM_addr = PC;
-    assign o_IMEM_cen = IMEM_cen; // load instruction
+    assign o_IMEM_cen = 1'b1; // load instruction
 
     // control signal
-    assign ALUSrc = (i_IMEM_data[6:0]==7'b0000011) || (i_IMEM_data[6:0]==7'b0100011);
-    assign MemtoReg = (i_IMEM_data[6:0]==7'b0000011);
-    assign RegWrite = (i_IMEM_data[6:0]==7'b0110011) || (i_IMEM_data[6:0]==7'b0000011) || (i_IMEM_data[6:0]==auipc_opcode) || (i_IMEM_data[6:0]==jal_opcode) || (i_IMEM_data[6:0]==jalr_opcode);
-    assign MemRead = (i_IMEM_data[6:0]==7'b0000011);
-    assign MemWrite = (i_IMEM_data[6:0]==7'b0100011);
-    assign Branch = (i_IMEM_data[6:0]==7'b1100011);
-    assign ALUOp[1] = (i_IMEM_data[6:0]==7'b0110011);
-    assign ALUOp[0] = (i_IMEM_data[6:0]==7'b1100011);   
+    assign ALUSrc = (i_IMEM_data[6:0]==lw_opcode) || (i_IMEM_data[6:0]==sw_opcode);
+    assign MemtoReg = (i_IMEM_data[6:0]==lw_opcode);
+    assign RegWrite = (i_IMEM_data[6:0]==add_opcode) || (i_IMEM_data[6:0]==lw_opcode) || (i_IMEM_data[6:0]==auipc_opcode) || (i_IMEM_data[6:0]==jal_opcode) || (i_IMEM_data[6:0]==jalr_opcode);
+    assign MemRead = (i_IMEM_data[6:0]==lw_opcode);
+    assign MemWrite = (i_IMEM_data[6:0]==sw_opcode);
+    assign Branch = (i_IMEM_data[6:0]==beq_opcode);
+    assign ALUOp[1] = (i_IMEM_data[6:0]==add_opcode);
+    assign ALUOp[0] = (i_IMEM_data[6:0]==beq_opcode);   
     assign ALU_control_input = (ALUOp==2'b00 ? 4'b0010 : (ALUOp[0]==1'b1 ? 4'b0110 : (i_IMEM_data[14:12]==3'b000 ? 4'b0010 : (i_IMEM_data[30]==1'b1 ? 4'b0110 : (i_IMEM_data[14:12]==3'b111 ? 4'b0000 : 4'b0001)))));
 
     // data memory
@@ -238,228 +214,149 @@ module CHIP #(                                                                  
     
     // Todo: any combinational/sequential circuit
 
-    // FSM
-
-    always @(*) begin // state
-        case (state)
-            S_IDLE: begin
-                case (i_IMEM_data[6:0])
-                    auipc_opcode: begin
-                        state_nxt = S_AUIPC;
-                    end
-                    jal_opcode: begin
-                        state_nxt = S_JAL;
-                    end
-                    jalr_opcode: begin
-                        state_nxt = S_JALR;
-                    end
-                    add_opcode: begin
-                        case({i_IMEM_data[31:25], i_IMEM_data[14:12]})
-                            {add_funct7, add_funct3}: begin
-                                state_nxt = S_ADD;
-                            end
-                            {sub_funct7, sub_funct3}: begin
-                                state_nxt = S_SUB;
-                            end
-                            {and_funct7, and_funct3}: begin
-                                state_nxt = S_AND;
-                            end
-                            {xor_funct7, xor_funct3}: begin
-                                state_nxt = S_XOR;
-                            end
-                            {mul_funct7, mul_funct3}: begin
-                                state_nxt = S_MUL;
-                            end
-                            default: begin
-                                state_nxt = state;
-                            end
-                        endcase
-                    end
-                    addi_opcode: begin
-                        case(i_IMEM_data[14:12])
-                            addi_funct3: begin
-                                state_nxt = S_ADDI;
-                            end
-                            slli_funct3: begin
-                                state_nxt = S_SLLI;
-                            end
-                            slti_funct3: begin
-                                state_nxt = S_SLTI;
-                            end
-                            srai_funct3: begin
-                                state_nxt = S_SRAI;
-                            end
-                            default: begin
-                                state_nxt = state;
-                            end
-                        endcase
-                    end
-                    lw_opcode: begin
-                        state_nxt = S_LW;
-                    end
-                    sw_opcode: begin
-                        state_nxt = S_SW;
-                    end
-                    bge_opcode: begin
-                        case(i_IMEM_data[6:0])
-                            bge_funct3: begin
-                                state_nxt = S_BGE;
-                            end
-                            beq_funct3: begin
-                                state_nxt = S_BEQ;
-                            end
-                            blt_funct3: begin
-                                state_nxt = S_BLT;
-                            end
-                            bne_funct3: begin
-                                state_nxt = S_BNE;
-                            end
-                            default: begin
-                                state_nxt = state;
-                            end
-                        endcase
-                    end
-                    ecall_opcode: begin
-                        state_nxt = S_ECALL;
-                    end
-                    default: begin
-                        state_nxt = state;
-                    end
-                endcase
-            end
-
-            S_MUL: begin
-                // TODO: state control
-            end
-
-            default: begin
-                state_nxt = S_IDLE;
-            end
-        endcase
-    end
-
-    always @(*) begin // action
-        imm = 0;
-        rdatad_nxt = rdatad;
-        IMEM_cen_nxt = 1;
-        DMEM_cen_nxt = 1;
-        finish_nxt = finish;
-        PC_nxt = PC + 4;
-
-        case (state)
-            S_IDLE: begin
-                PC_nxt = PC;
-            end
-
-            S_AUIPC: begin
+    // action given instructions
+    always @(*) begin
+        case (i_IMEM_data[6:0])
+            auipc_opcode: begin
+                // auipc
                 imm = {i_IMEM_data[31:12], 12'b0};
                 rdatad_nxt = $signed(PC) + $signed(imm);
+                PC_nxt = $signed(PC) + $signed(4);
             end
-
-            S_JAL: begin
+            jal_opcode: begin
+                // jal
                 imm = {{11{i_IMEM_data[31]}}, i_IMEM_data[31], i_IMEM_data[19:12], i_IMEM_data[20], i_IMEM_data[30:21], 1'b0};
                 rdatad_nxt = $signed(PC) + $signed(4);
                 PC_nxt = $signed(PC) + $signed(imm);
             end
-
-            S_JALR: begin
+            jalr_opcode: begin
+                // jalr
                 imm = {20'b0, i_IMEM_data[31:20]};
                 rdatad_nxt = $signed(PC) + $signed(4);
                 PC_nxt = $signed(rdata1) + $signed(imm);
             end
-
-            S_ADD: begin
-                rdatad_nxt = $signed(rdata1) + $signed(rdata2);
+            add_opcode: begin
+                case({i_IMEM_data[31:25], i_IMEM_data[14:12]})
+                    {add_funct7, add_funct3}: begin
+                        // add
+                        rdatad_nxt = $signed(rdata1) + $signed(rdata2);
+                        PC_nxt = $signed(PC) + $signed(4);
+                    end
+                    {sub_funct7, sub_funct3}: begin
+                        // sub
+                        rdatad_nxt = $signed(rdata1) - $signed(rdata2);
+                        PC_nxt = $signed(PC) + $signed(4);
+                    end
+                    {and_funct7, and_funct3}: begin
+                        // and
+                        rdatad_nxt = rdata1 & rdata2;
+                        PC_nxt = $signed(PC) + $signed(4);
+                    end
+                    {xor_funct7, xor_funct3}: begin
+                        // xor
+                        rdatad_nxt = rdata1 ^ rdata2;
+                        PC_nxt = $signed(PC) + $signed(4);
+                    end
+                    {mul_funct7, mul_funct3}: begin
+                        // mul
+                        rdatad_nxt = muldiv_done ? muldiv_result : rdatad;
+                        PC_nxt = muldiv_done ? ($signed(PC) + $signed(4)) : PC;
+                        muldiv_valid_nxt = 1;
+                    end
+                    default: begin
+                        rdatad_nxt = rdatad;
+                        PC_nxt = $signed(PC) + $signed(4);
+                    end
+                endcase
             end
-
-            S_SUB: begin
-                rdatad_nxt = $signed(rdata1) - $signed(rdata2);
+            addi_opcode: begin
+                case(i_IMEM_data[14:12])
+                    addi_funct3: begin
+                        // addi
+                        imm = {20'b0, i_IMEM_data[31:20]};
+                        rdatad_nxt = $signed(rdata1) + $signed(imm);
+                        PC_nxt = $signed(PC) + $signed(4);
+                    end
+                    slli_funct3: begin
+                        // slli
+                        imm = i_IMEM_data[25:20];
+                        rdatad_nxt = rdata1 << imm;
+                        PC_nxt = $signed(PC) + $signed(4);
+                    end
+                    slti_funct3: begin
+                        // slti
+                        imm = {20'b0, i_IMEM_data[31:20]};
+                        rdatad_nxt = (rdata1 < imm) ? 1 : 0;
+                        PC_nxt = $signed(PC) + $signed(4);
+                    end
+                    srai_funct3: begin
+                        // srai
+                        imm = i_IMEM_data[24:20];
+                        rdatad_nxt = rdata1 >>> imm;
+                        PC_nxt = $signed(PC) + $signed(4);
+                    end
+                    default: begin
+                        rdatad_nxt = rdatad;
+                        PC_nxt = $signed(PC) + $signed(4);
+                    end
+                endcase
             end
-
-            S_AND: begin
-                rdatad_nxt = rdata1 & rdata2;
-            end
-
-            S_XOR: begin
-                rdatad_nxt = rdata1 ^ rdata2;
-            end
-
-            S_ADDI: begin
-                imm = {20'b0, i_IMEM_data[31:20]};
-                rdatad_nxt = $signed(rdata1) + $signed(imm);
-            end
-
-            S_SLLI: begin
-                imm = i_IMEM_data[25:20];
-                rdatad_nxt = rdata1 << imm;
-            end
-
-            S_SLTI: begin
-                imm = {20'b0, i_IMEM_data[31:20]};
-                rdatad_nxt = (rdata1 < imm) ? 1 : 0;
-            end
-
-            S_SRAI: begin
-                imm = i_IMEM_data[24:20];
-                rdatad_nxt = rdata1 >>> imm;
-            end
-
-            S_LW: begin
+            lw_opcode: begin
+                // lw
                 imm = {{20{i_IMEM_data[31]}}, i_IMEM_data[31:20]};
                 DMEM_addr_nxt = $signed(rdata1) + $signed(imm);
                 DMEM_cen_nxt = 1;
                 rdatad_nxt = i_DMEM_rdata;
+                PC_nxt = $signed(PC) + $signed(4);
             end
-
-            S_SW: begin
+            sw_opcode: begin
+                // sw
                 imm = {{20{i_IMEM_data[31]}}, i_IMEM_data[31:25], i_IMEM_data[12:8]};
                 DMEM_addr_nxt = $signed(rdata1) + $signed(imm);
                 DMEM_wen_nxt = 1;
                 DMEM_wdata_nxt = rdata2;
+                PC_nxt = $signed(PC) + $signed(4);
             end
-
-            S_MUL: begin
-                rdatad_nxt = muldiv_done ? muldiv_result : rdatad;
-                PC_nxt = PC;
+            bge_opcode: begin
+                case(i_IMEM_data[6:0])
+                    bge_funct3: begin
+                        // bge
+                        imm = {20'b0, i_IMEM_data[31], i_IMEM_data[8], i_IMEM_data[30:25], i_IMEM_data[12:9]};
+                        PC_nxt = ($signed(rdata1) >= $signed(rdata2)) ? ($signed(PC) + $signed({imm, 1'b0})) : $signed(PC) + $signed(4);
+                    end
+                    beq_funct3: begin
+                        // beq
+                        imm = {20'b0, i_IMEM_data[31], i_IMEM_data[8], i_IMEM_data[30:25], i_IMEM_data[12:9]};
+                        PC_nxt = ($signed(rdata1) == $signed(rdata2)) ? ($signed(PC) + $signed({imm, 1'b0})) : $signed(PC) + $signed(4);
+                    end
+                    blt_funct3: begin
+                        // blt
+                        imm = {20'b0, i_IMEM_data[31], i_IMEM_data[8], i_IMEM_data[30:25], i_IMEM_data[12:9]};
+                        PC_nxt = ($signed(rdata1) < $signed(rdata2)) ? ($signed(PC) + $signed({imm, 1'b0})) : $signed(PC) + $signed(4);
+                    end
+                    bne_funct3: begin
+                        // bne
+                        imm = {20'b0, i_IMEM_data[31], i_IMEM_data[8], i_IMEM_data[30:25], i_IMEM_data[12:9]};
+                        PC_nxt = ($signed(rdata1) != $signed(rdata2)) ? ($signed(PC) + $signed({imm, 1'b0})) : $signed(PC) + $signed(4);
+                    end
+                    default: begin
+                        PC_nxt = $signed(PC) + $signed(4);
+                    end
+                endcase
             end
-
-            S_BEQ: begin
-                imm = {20'b0, i_IMEM_data[31], i_IMEM_data[8], i_IMEM_data[30:25], i_IMEM_data[12:9]};
-                PC_nxt = ($signed(rdata1) == $signed(rdata2)) ? ($signed(PC) + $signed({imm, 1'b0})) : PC;
-            end
-
-            S_BGE: begin
-                imm = {20'b0, i_IMEM_data[31], i_IMEM_data[8], i_IMEM_data[30:25], i_IMEM_data[12:9]};
-                PC_nxt = ($signed(rdata1) >= $signed(rdata2)) ? ($signed(PC) + $signed({imm, 1'b0})) : PC;
-            end
-
-            S_BLT: begin
-                imm = {20'b0, i_IMEM_data[31], i_IMEM_data[8], i_IMEM_data[30:25], i_IMEM_data[12:9]};
-                PC_nxt = ($signed(rdata1) < $signed(rdata2)) ? ($signed(PC) + $signed({imm, 1'b0})) : PC;
-            end
-
-            S_BNE: begin
-                imm = {20'b0, i_IMEM_data[31], i_IMEM_data[8], i_IMEM_data[30:25], i_IMEM_data[12:9]};
-                PC_nxt = ($signed(rdata1) != $signed(rdata2)) ? ($signed(PC) + $signed({imm, 1'b0})) : PC;
-            end
-
-            S_ECALL: begin
-                imm = {20'b0, i_IMEM_data[31:20]};
+            ecall_opcode: begin
                 finish_nxt = 1;
             end
-
             default: begin
-                PC_nxt = PC;
+                PC_nxt = $signed(PC) + $signed(4);
             end
         endcase
     end
-
+    
     always @(posedge i_clk or negedge i_rst_n) begin
         if (!i_rst_n) begin
-            state <= S_IDLE;
 
             PC <= 32'h00010000; // Do not modify this value!!!
-            IMEM_cen <= 1;
             
             rdatad <= 32'b0;
             DMEM_wen <= 0;
@@ -469,12 +366,11 @@ module CHIP #(                                                                  
             DMEM_rdata <= 0;
 
             finish <= 0;
+            muldiv_valid <= 0;
         end
         else begin
-            state <= state_nxt;
 
             PC <= PC_nxt;
-            IMEM_cen <= IMEM_cen_nxt;
 
             rdatad <= rdatad_nxt;
             DMEM_wen <= DMEM_wen_nxt;
@@ -484,6 +380,7 @@ module CHIP #(                                                                  
             DMEM_rdata <= DMEM_rdata_nxt;
 
             finish <= finish_nxt;
+            muldiv_valid <= muldiv_valid_nxt;
         end
     end
 endmodule
