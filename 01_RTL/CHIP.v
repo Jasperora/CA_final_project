@@ -108,8 +108,6 @@ module CHIP #(                                                                  
     reg [BIT_W-1:0] rdatad, rdatad_nxt;
 
     // data memory
-    reg DMEM_cen, DMEM_cen_nxt;
-    reg DMEM_wen, DMEM_wen_nxt;      
     reg [BIT_W-1:0] DMEM_addr, DMEM_addr_nxt;
     reg [BIT_W-1:0] DMEM_wdata, DMEM_wdata_nxt;
     reg [BIT_W-1:0] DMEM_rdata, DMEM_rdata_nxt;
@@ -129,6 +127,9 @@ module CHIP #(                                                                  
     wire [BIT_W-1:0] muldiv_result;
     reg muldiv_valid, muldiv_valid_nxt;
 
+    // counter
+    reg [4:0] cnt, cnt_nxt;
+
     // finish procedure
     reg finish, finish_nxt;
 
@@ -145,7 +146,7 @@ module CHIP #(                                                                  
     // control signal
     assign ALUSrc = (i_IMEM_data[6:0]==lw_opcode) || (i_IMEM_data[6:0]==sw_opcode);
     assign MemtoReg = (i_IMEM_data[6:0]==lw_opcode);
-    assign RegWrite = (i_IMEM_data[6:0]==add_opcode) || (i_IMEM_data[6:0]==lw_opcode) || (i_IMEM_data[6:0]==auipc_opcode) || (i_IMEM_data[6:0]==jal_opcode) || (i_IMEM_data[6:0]==jalr_opcode);
+    assign RegWrite = (i_IMEM_data[6:0]==add_opcode) || (i_IMEM_data[6:0]==addi_opcode) || (i_IMEM_data[6:0]==lw_opcode) || (i_IMEM_data[6:0]==auipc_opcode) || (i_IMEM_data[6:0]==jal_opcode) || (i_IMEM_data[6:0]==jalr_opcode);
     assign MemRead = (i_IMEM_data[6:0]==lw_opcode);
     assign MemWrite = (i_IMEM_data[6:0]==sw_opcode);
     assign Branch = (i_IMEM_data[6:0]==beq_opcode);
@@ -154,8 +155,8 @@ module CHIP #(                                                                  
     assign ALU_control_input = (ALUOp==2'b00 ? 4'b0010 : (ALUOp[0]==1'b1 ? 4'b0110 : (i_IMEM_data[14:12]==3'b000 ? 4'b0010 : (i_IMEM_data[30]==1'b1 ? 4'b0110 : (i_IMEM_data[14:12]==3'b111 ? 4'b0000 : 4'b0001)))));
 
     // data memory
-    assign o_DMEM_cen = DMEM_cen;
-    assign o_DMEM_wen = DMEM_wen;
+    assign o_DMEM_cen = MemtoReg || MemRead || MemWrite;
+    assign o_DMEM_wen = MemWrite ? 1 : 0;
     assign o_DMEM_addr = DMEM_addr;
     assign o_DMEM_wdata = DMEM_wdata;
 
@@ -216,6 +217,7 @@ module CHIP #(                                                                  
 
     // action given instructions
     always @(*) begin
+        cnt_nxt = cnt;
         case (i_IMEM_data[6:0])
             auipc_opcode: begin
                 // auipc
@@ -303,19 +305,35 @@ module CHIP #(                                                                  
             end
             lw_opcode: begin
                 // lw
-                imm = {{20{i_IMEM_data[31]}}, i_IMEM_data[31:20]};
-                DMEM_addr_nxt = $signed(rdata1) + $signed(imm);
-                DMEM_cen_nxt = 1;
-                rdatad_nxt = i_DMEM_rdata;
-                PC_nxt = $signed(PC) + $signed(4);
+                if (cnt<5'd11) begin
+                    imm = {{20{i_IMEM_data[31]}}, i_IMEM_data[31:20]};
+                    DMEM_addr_nxt = $signed(rdata1) + $signed(imm);
+                    rdatad_nxt = rdatad;
+                    cnt_nxt = cnt + 1;
+                    PC_nxt = PC;
+                end
+                else begin
+                    DMEM_addr_nxt = 0;
+                    rdatad_nxt = i_DMEM_rdata;
+                    cnt_nxt = 0;
+                    PC_nxt = $signed(PC) + $signed(4);
+                end
             end
             sw_opcode: begin
                 // sw
-                imm = {{20{i_IMEM_data[31]}}, i_IMEM_data[31:25], i_IMEM_data[12:8]};
-                DMEM_addr_nxt = $signed(rdata1) + $signed(imm);
-                DMEM_wen_nxt = 1;
-                DMEM_wdata_nxt = rdata2;
-                PC_nxt = $signed(PC) + $signed(4);
+                if (cnt<5'd2) begin
+                    imm = {{20{i_IMEM_data[31]}}, i_IMEM_data[31:25], i_IMEM_data[12:8]};
+                    DMEM_addr_nxt = $signed(rdata1) + $signed(imm);
+                    DMEM_wdata_nxt = rdata2;
+                    cnt_nxt = cnt + 1;
+                    PC_nxt = PC;
+                end
+                else begin
+                    DMEM_addr_nxt = 0;
+                    DMEM_wdata_nxt = 0;
+                    cnt_nxt = 0;
+                    PC_nxt = $signed(PC) + $signed(4);
+                end
             end
             bge_opcode: begin
                 case(i_IMEM_data[6:0])
@@ -353,34 +371,35 @@ module CHIP #(                                                                  
         endcase
     end
     
+
     always @(posedge i_clk or negedge i_rst_n) begin
         if (!i_rst_n) begin
 
             PC <= 32'h00010000; // Do not modify this value!!!
             
             rdatad <= 32'b0;
-            DMEM_wen <= 0;
-            DMEM_cen <= 1;
             DMEM_addr <= 0;
             DMEM_wdata <= 0;
             DMEM_rdata <= 0;
 
             finish <= 0;
             muldiv_valid <= 0;
+
+            cnt <= 0;
         end
         else begin
 
             PC <= PC_nxt;
 
             rdatad <= rdatad_nxt;
-            DMEM_wen <= DMEM_wen_nxt;
-            DMEM_cen <= DMEM_cen_nxt;
             DMEM_addr <= DMEM_addr_nxt;
             DMEM_wdata <= DMEM_wdata_nxt;
             DMEM_rdata <= DMEM_rdata_nxt;
 
             finish <= finish_nxt;
             muldiv_valid <= muldiv_valid_nxt;
+
+            cnt <= cnt_nxt;
         end
     end
 endmodule
