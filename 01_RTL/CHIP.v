@@ -631,6 +631,18 @@ module Cache#(
     // FSM
     always @(*) begin
         case(state)
+            S_IDLE: begin 
+            end
+            S_WRITE: begin
+            end
+            S_READ: begin
+            end
+            S_ALLO: begin
+            end
+            S_WB: begin
+            end
+            default: begin
+            end
         endcase
     end
 
