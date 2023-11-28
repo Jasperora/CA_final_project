@@ -305,33 +305,29 @@ module CHIP #(                                                                  
             end
             lw_opcode: begin
                 // lw
-                if (cnt<5'd11) begin
+                if (i_DMEM_stall) begin
                     imm = {{20{i_IMEM_data[31]}}, i_IMEM_data[31:20]};
                     DMEM_addr_nxt = $signed(rdata1) + $signed(imm);
                     rdatad_nxt = rdatad;
-                    cnt_nxt = cnt + 1;
                     PC_nxt = PC;
                 end
                 else begin
-                    DMEM_addr_nxt = 0;
+                    imm = {{20{i_IMEM_data[31]}}, i_IMEM_data[31:20]};
+                    DMEM_addr_nxt = $signed(rdata1) + $signed(imm);
                     rdatad_nxt = i_DMEM_rdata;
-                    cnt_nxt = 0;
                     PC_nxt = $signed(PC) + $signed(4);
                 end
             end
             sw_opcode: begin
-                // sw
-                if (cnt<5'd2) begin
-                    imm = {{20{i_IMEM_data[31]}}, i_IMEM_data[31:25], i_IMEM_data[12:8]};
-                    DMEM_addr_nxt = $signed(rdata1) + $signed(imm);
+                if (i_DMEM_stall) begin
+                    imm = {{20{0}}, i_IMEM_data[31:25], i_IMEM_data[11:7]};
+                    DMEM_addr_nxt = rdata1 + imm;
                     DMEM_wdata_nxt = rdata2;
-                    cnt_nxt = cnt + 1;
                     PC_nxt = PC;
                 end
                 else begin
-                    DMEM_addr_nxt = 0;
-                    DMEM_wdata_nxt = 0;
-                    cnt_nxt = 0;
+                    DMEM_addr_nxt = DMEM_addr;
+                    DMEM_wdata_nxt = DMEM_wdata;
                     PC_nxt = $signed(PC) + $signed(4);
                 end
             end
