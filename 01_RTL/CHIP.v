@@ -127,9 +127,6 @@ module CHIP #(                                                                  
     wire [BIT_W-1:0] muldiv_result;
     reg muldiv_valid, muldiv_valid_nxt;
 
-    // counter
-    reg [4:0] cnt, cnt_nxt;
-
     // finish procedure
     reg finish, finish_nxt;
 
@@ -217,7 +214,6 @@ module CHIP #(                                                                  
 
     // action given instructions
     always @(*) begin
-        cnt_nxt = cnt;
         case (i_IMEM_data[6:0])
             auipc_opcode: begin
                 // auipc
@@ -380,8 +376,6 @@ module CHIP #(                                                                  
 
             finish <= 0;
             muldiv_valid <= 0;
-
-            cnt <= 0;
         end
         else begin
 
@@ -394,8 +388,6 @@ module CHIP #(                                                                  
 
             finish <= finish_nxt;
             muldiv_valid <= muldiv_valid_nxt;
-
-            cnt <= cnt_nxt;
         end
     end
 endmodule
@@ -626,5 +618,29 @@ module Cache#(
     //------------------------------------------//
 
     // TODO: BONUS
+    
+    reg [2:0] state, state_nxt;
+
+    // state
+    parameter S_IDLE  = 3'd1;
+    parameter S_WRITE = 3'd2;
+    parameter S_READ  = 3'd3;
+    parameter S_ALLO  = 3'd4;
+    parameter S_WB    = 3'd5;
+
+    // FSM
+    always @(*) begin
+        case(state)
+        endcase
+    end
+
+    always @(posedge i_clk or negedge i_rst_n) begin
+        if (!i_rst_n) begin
+            state <= S_IDLE;
+        end
+        else begin
+            state <= state_nxt;
+        end
+    end
 
 endmodule
