@@ -171,7 +171,7 @@ module Final_tb;
             end
         end
 
-        mem_data_offset = eof + 8;
+        mem_data_offset = eof;
 
         #(`CYCLE*0.5) rst_n = 1'b0;
         #(`CYCLE*2.0) rst_n = 1'b1;
@@ -241,7 +241,7 @@ module Final_tb;
             $display("============================================================\n");
             $display("Success!");
             $display("The test result is .....PASS :)");
-            $display("Total execution cycle : %0d", cyc);
+            $display("Total execution cycle : %32d", cyc);
             $display("============================================================\n");
         end
 
