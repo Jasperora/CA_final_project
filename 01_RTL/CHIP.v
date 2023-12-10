@@ -568,61 +568,141 @@ module Cache#(
         input i_clk,
         input i_rst_n,
         // processor interface
-            input i_proc_cen,
-            input i_proc_wen,
-            input [ADDR_W-1:0] i_proc_addr,
-            input [BIT_W-1:0]  i_proc_wdata,
-            output [BIT_W-1:0] o_proc_rdata,
-            output o_proc_stall,
-            input i_proc_finish,
-            output o_cache_finish,
+        input i_proc_cen,
+        input i_proc_wen,
+        input [ADDR_W-1:0] i_proc_addr,
+        input [BIT_W-1:0]  i_proc_wdata,
+        output [BIT_W-1:0] o_proc_rdata,
+        output o_proc_stall,
+        input i_proc_finish,
+        output o_cache_finish,
         // memory interface
-            output o_mem_cen,
-            output o_mem_wen,
-            output [ADDR_W-1:0] o_mem_addr,
-            output [BIT_W*4-1:0]  o_mem_wdata,
-            input [BIT_W*4-1:0] i_mem_rdata,
-            input i_mem_stall,
-            output o_cache_available,
+        output o_mem_cen,
+        output o_mem_wen,
+        output [ADDR_W-1:0] o_mem_addr,
+        output [BIT_W*4-1:0]  o_mem_wdata,
+        input [BIT_W*4-1:0] i_mem_rdata,
+        input i_mem_stall,
+        output o_cache_available,
         // others
         input  [ADDR_W-1: 0] i_offset
     );
-
-    assign o_cache_available = 0; // REVIEW: change this value to 1 if the cache is implemented
+    assign o_cache_available = 1; // REVIEW: change this value to 1 if the cache is implemented
 
     //------------------------------------------//
     //          default connection              //
-    assign o_mem_cen = i_proc_cen;              //
-    assign o_mem_wen = i_proc_wen;              //
-    assign o_mem_addr = i_proc_addr;            //
-    assign o_mem_wdata = i_proc_wdata;          //
-    assign o_proc_rdata = i_mem_rdata[0+:BIT_W];//
-    assign o_proc_stall = i_mem_stall;          //
+    // assign o_mem_cen = i_proc_cen;              //
+    // assign o_mem_wen = i_proc_wen;              //
+    // assign o_mem_addr = i_proc_addr;            //
+    // assign o_mem_wdata = i_proc_wdata;          //
+    // assign o_proc_rdata = i_mem_rdata[0+:BIT_W];//
+    // assign o_proc_stall = i_mem_stall;          //
     //------------------------------------------//
 
     // TODO: BONUS
-    
     reg [2:0] state, state_nxt;
+    
+    // output registers
+    reg mem_cen, mem_cen_nxt;
+    reg mem_wen, mem_wen_nxt;
+    reg [ADDR_W-1:0] mem_addr, mem_addr_nxt;
+    reg [BIT_W*4-1] mem_wdata, mem_wdata_nxt;
+    reg [BIT_W-1:0] proc_rdata, proc_rdata_nxt;
+    reg proc_stall, proc_stall_nxt;
 
-    // state
-    parameter S_IDLE  = 3'd1;
-    parameter S_WRITE = 3'd2;
-    parameter S_READ  = 3'd3;
-    parameter S_ALLO  = 3'd4;
-    parameter S_WB    = 3'd5;
+    assign o_mem_cen = mem_cen;              
+    assign o_mem_wen = mem_wen;              
+    assign o_mem_addr = mem_addr;            
+    assign o_mem_wdata = mem_wdata;          
+    assign o_proc_rdata = proc_rdata;
+    assign o_proc_stall = proc_stall;          
+
+
+    // entries
+    /*
+    [tag |index|block offset|byte offset]
+    [31:8|7:4|3:2|1:0]
+    [24| 4| 2| 2]
+    16 blocks
+    */
+    reg v [0:15][0:3];
+    reg v_nxt [0:15][0:3];
+    reg [23:0] tag [0:15][0:3];
+    reg [23:0] tag_nxt [0:15][0:3];
+    reg [BIT_W*4-1:0] entry [0:15][0:3];
+    reg [BIT_W*4-1:0] entry_nxt [0:15][0:3];
+
+    // state (lecture slide p96)
+    parameter S_IDLE    = 3'd0;
+    parameter S_WRITE   = 3'd1;
+    parameter S_WB      = 3'd2;
+    parameter S_ALLO    = 3'd3;
+    parameter S_READ    = 3'd4;
 
     // FSM
+    reg dirty, hit; // TODO: assign dirty and hit
     always @(*) begin
+        state_nxt = state;
+
         case(state)
-            S_IDLE: begin 
+            S_IDLE: begin
+                if (i_proc_cen) begin
+                    if (i_proc_wen) begin
+                        state_nxt = S_WRITE;
+                    end
+                    else begin
+                        state_nxt = S_READ;
+                    end
+                end
+                else begin
+                    state_nxt = state;
+                end
             end
             S_WRITE: begin
-            end
-            S_READ: begin
-            end
-            S_ALLO: begin
+                if (dirty) begin
+                    state_nxt = S_WB;
+                end
+                else begin 
+                    state_nxt = S_IDLE;
+                end
             end
             S_WB: begin
+                if (!i_mem_stall) begin
+                    if (i_proc_wen) begin   // REVIEW: p57 i_proc_write?
+                        state_nxt = S_WRITE;
+                    end
+                    else begin
+                        state_nxt = S_ALLO;
+                    end
+                end
+                else begin
+                    state_nxt = state;
+                end
+            end
+            S_ALLO: begin
+                if (!i_mem_stall) begin
+                    state_nxt = S_READ;
+                end
+                else begin
+                    state_nxt = state;
+                end
+            end
+            S_READ: begin
+                if (dirty) begin
+                    state_nxt = S_WB;
+                end else begin
+                    if (dirty) begin
+                        state_nxt = S_WB;
+                    end
+                    else begin
+                        if (hit) begin
+                            state_nxt = S_IDLE;
+                        end
+                        else begin
+                            state_nxt = S_ALLO;
+                        end
+                    end
+                end           
             end
             default: begin
             end
@@ -632,9 +712,29 @@ module Cache#(
     always @(posedge i_clk or negedge i_rst_n) begin
         if (!i_rst_n) begin
             state <= S_IDLE;
+            v <= '{default:1'b0};
+            tag <= '{default:24'b0};
+            entry <= '{default:31'b0};
+
+            mem_wen <= 0;
+            mem_cen <= 0;
+            mem_addr <= 0;
+            mem_wdata <= 0;
+            proc_rdata <= 0;
+            proc_stall <= 0;
         end
         else begin
             state <= state_nxt;
+            v = v_nxt;
+            tag <= tag_nxt;
+            entry <= entry_nxt;
+
+            mem_wen <= mem_wen_nxt;
+            mem_cen <= mem_cen_nxt;
+            mem_addr <= mem_addr_nxt;
+            mem_wdata <= mem_wdata_nxt;
+            proc_rdata <= proc_rdata_nxt;
+            proc_stall <= proc_stall_nxt;
         end
     end
 
