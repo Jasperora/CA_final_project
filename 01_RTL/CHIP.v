@@ -28,7 +28,7 @@ module CHIP #(                                                                  
 // Parameters
 // ------------------------------------------------------------------------------------------------------------------------------------------------------
 
-    // TODO: any declaration
+    // REVIEW: any declaration
     // auipc
     parameter auipc_opcode = 7'b0010111;
     // jal
@@ -94,7 +94,7 @@ module CHIP #(                                                                  
 // Wires and Registers
 // ------------------------------------------------------------------------------------------------------------------------------------------------------
     
-    // TODO: any declaration
+    // REVIEW: any declaration
 
     // instruction memory
     reg [BIT_W-1:0] PC, PC_nxt;
@@ -134,7 +134,7 @@ module CHIP #(                                                                  
 // Continuous Assignment
 // ------------------------------------------------------------------------------------------------------------------------------------------------------
 
-    // TODO: any wire assignment
+    // REVIEW: any wire assignment
 
     // instruction memory
     assign o_IMEM_addr = PC;
@@ -152,10 +152,10 @@ module CHIP #(                                                                  
     assign ALU_control_input = (ALUOp==2'b00 ? 4'b0010 : (ALUOp[0]==1'b1 ? 4'b0110 : (i_IMEM_data[14:12]==3'b000 ? 4'b0010 : (i_IMEM_data[30]==1'b1 ? 4'b0110 : (i_IMEM_data[14:12]==3'b111 ? 4'b0000 : 4'b0001)))));
 
     // data memory
-    assign o_DMEM_cen = MemtoReg || MemRead || MemWrite;
-    assign o_DMEM_wen = MemWrite ? 1 : 0;
-    assign o_DMEM_addr = DMEM_addr;
-    assign o_DMEM_wdata = DMEM_wdata;
+    assign o_DMEM_cen = MemtoReg || MemRead || MemWrite; // TODO: o_DMEM_cen
+    assign o_DMEM_wen = MemWrite ? 1 : 0;   // TODO: o_DMEM_wen
+    assign o_DMEM_addr = DMEM_addr; // TODO: o_DMEM_addr
+    assign o_DMEM_wdata = DMEM_wdata;   // TODO: o_DMEM_wdata
 
     // finish
     assign o_finish = finish;
@@ -186,25 +186,6 @@ module CHIP #(                                                                  
         .o_data(muldiv_result),
         .o_done(muldiv_done)
     );
-
-    // Cache cache0(
-    //     .i_clk(i_clk),
-    //     .i_rst_n(i_rst_n),
-    //     .i_proc_cen(o_DMEM_cen),
-    //     .i_proc_wen(o_DMEM_wen),
-    //     .i_proc_addr(o_DMEM_addr),
-    //     .i_proc_wdata(o_DMEM_wdata),
-    //     .o_proc_rdata(i_DMEM_rdata),
-    //     .o_proc_stall(i_DMEM_stall),
-    //     .i_proc_finish(o_proc_finish),
-    //     .o_cache_finish(i_cache_finish),
-    //     .o_mem_cen(mem_cen),
-    //     .o_mem_wen(mem_wen),
-    //     .o_mem_addr(mem_addr),
-    //     .o_mem_wdata(mem_wdata),
-    //     .i_mem_rdata(mem_rdata),
-    //     .i_mem_stall(mem_stall)
-    // );
 
 // ------------------------------------------------------------------------------------------------------------------------------------------------------
 // Always Blocks
@@ -301,7 +282,7 @@ module CHIP #(                                                                  
             end
             lw_opcode: begin
                 // lw
-                if (i_DMEM_stall) begin
+                if (i_DMEM_stall) begin // TODO: i_DMEM_stall
                     imm = {{20{i_IMEM_data[31]}}, i_IMEM_data[31:20]};
                     DMEM_addr_nxt = $signed(rdata1) + $signed(imm);
                     rdatad_nxt = rdatad;
@@ -310,12 +291,12 @@ module CHIP #(                                                                  
                 else begin
                     imm = {{20{i_IMEM_data[31]}}, i_IMEM_data[31:20]};
                     DMEM_addr_nxt = $signed(rdata1) + $signed(imm);
-                    rdatad_nxt = i_DMEM_rdata;
+                    rdatad_nxt = i_DMEM_rdata; // TODO: i_DMEM_rdata
                     PC_nxt = $signed(PC) + $signed(4);
                 end
             end
             sw_opcode: begin
-                if (i_DMEM_stall) begin
+                if (i_DMEM_stall) begin // TODO: i_DMEM_stall
                     imm = {{20{0}}, i_IMEM_data[31:25], i_IMEM_data[11:7]};
                     DMEM_addr_nxt = rdata1 + imm;
                     DMEM_wdata_nxt = rdata2;
@@ -439,7 +420,7 @@ endmodule
 module MULDIV_unit#(
     parameter BIT_W = 32    
 )(
-    // TODO: port declaration
+    // REVIEW: port declaration
         input                       i_clk,   // clock
         input                       i_rst_n, // reset
 
@@ -450,7 +431,7 @@ module MULDIV_unit#(
         output [2*BIT_W - 1 : 0]    o_data,  // output value
         output                      o_done   // output valid signal
     );
-    // TODO: HW2
+    // REVIEW: HW2
         // Do not Modify the above part !!!
 // Parameters
     // ======== choose your FSM style ==========
@@ -602,10 +583,12 @@ module Cache#(
             output [BIT_W*4-1:0]  o_mem_wdata,
             input [BIT_W*4-1:0] i_mem_rdata,
             input i_mem_stall,
-            output o_cache_available
+            output o_cache_available,
+        // others
+        input  [ADDR_W-1: 0] i_offset
     );
 
-    assign o_cache_available = 0; // change this value to 1 if the cache is implemented
+    assign o_cache_available = 0; // REVIEW: change this value to 1 if the cache is implemented
 
     //------------------------------------------//
     //          default connection              //
