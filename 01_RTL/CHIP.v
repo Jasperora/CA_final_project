@@ -126,6 +126,7 @@ module CHIP #(                                                                  
     wire muldiv_done;
     wire [BIT_W-1:0] muldiv_result;
     reg muldiv_valid, muldiv_valid_nxt;
+    reg muldiv_ready, muldiv_ready_nxt;
 
     // finish procedure
     reg finish, finish_nxt;
@@ -180,7 +181,7 @@ module CHIP #(                                                                  
     MULDIV_unit muldiv0(
         .i_clk(i_clk),
         .i_rst_n(i_rst_n),
-        .i_valid(muldiv_valid),
+        .i_valid(muldiv_valid_nxt),
         .i_A(rdata1),
         .i_B(rdata2),
         .o_data(muldiv_result),
@@ -214,6 +215,9 @@ module CHIP #(                                                                  
 
     // action given instructions
     always @(*) begin
+        muldiv_ready_nxt = 1;
+        muldiv_valid_nxt = 0;
+
         case (i_IMEM_data[6:0])
             auipc_opcode: begin
                 // auipc
@@ -257,9 +261,11 @@ module CHIP #(                                                                  
                     end
                     {mul_funct7, mul_funct3}: begin
                         // mul
-                        rdatad_nxt = muldiv_done ? muldiv_result : rdatad;
                         PC_nxt = muldiv_done ? ($signed(PC) + $signed(4)) : PC;
-                        muldiv_valid_nxt = 1;
+                        muldiv_ready_nxt = 0;
+                        // muldiv_ready_nxt = muldiv_done ? 0 : 1;
+                        muldiv_valid_nxt = muldiv_ready;
+                        rdatad_nxt = muldiv_done ? muldiv_result : rdatad;
                     end
                     default: begin
                         rdatad_nxt = rdatad;
@@ -271,7 +277,7 @@ module CHIP #(                                                                  
                 case(i_IMEM_data[14:12])
                     addi_funct3: begin
                         // addi
-                        imm = {20'b0, i_IMEM_data[31:20]};
+                        imm = {{20{i_IMEM_data[31]}}, i_IMEM_data[31:20]};
                         rdatad_nxt = $signed(rdata1) + $signed(imm);
                         PC_nxt = $signed(PC) + $signed(4);
                     end
@@ -283,7 +289,7 @@ module CHIP #(                                                                  
                     end
                     slti_funct3: begin
                         // slti
-                        imm = {20'b0, i_IMEM_data[31:20]};
+                        imm = {{20{i_IMEM_data[31]}}, i_IMEM_data[31:20]};
                         rdatad_nxt = (rdata1 < imm) ? 1 : 0;
                         PC_nxt = $signed(PC) + $signed(4);
                     end
@@ -316,7 +322,7 @@ module CHIP #(                                                                  
             end
             sw_opcode: begin
                 if (i_DMEM_stall) begin
-                    imm = {{20{0}}, i_IMEM_data[31:25], i_IMEM_data[11:7]};
+                    imm = {{20{i_IMEM_data[31]}}, i_IMEM_data[31:25], i_IMEM_data[11:7]};
                     DMEM_addr_nxt = rdata1 + imm;
                     DMEM_wdata_nxt = rdata2;
                     PC_nxt = PC;
@@ -328,25 +334,25 @@ module CHIP #(                                                                  
                 end
             end
             bge_opcode: begin
-                case(i_IMEM_data[6:0])
+                case(i_IMEM_data[14:12])
                     bge_funct3: begin
                         // bge
-                        imm = {20'b0, i_IMEM_data[31], i_IMEM_data[8], i_IMEM_data[30:25], i_IMEM_data[12:9]};
+                        imm = {{20{i_IMEM_data[31]}}, i_IMEM_data[31], i_IMEM_data[7], i_IMEM_data[30:25], i_IMEM_data[11:8]};
                         PC_nxt = ($signed(rdata1) >= $signed(rdata2)) ? ($signed(PC) + $signed({imm, 1'b0})) : $signed(PC) + $signed(4);
                     end
                     beq_funct3: begin
                         // beq
-                        imm = {20'b0, i_IMEM_data[31], i_IMEM_data[8], i_IMEM_data[30:25], i_IMEM_data[12:9]};
+                        imm = {{20{i_IMEM_data[31]}}, i_IMEM_data[31], i_IMEM_data[7], i_IMEM_data[30:25], i_IMEM_data[11:8]};
                         PC_nxt = ($signed(rdata1) == $signed(rdata2)) ? ($signed(PC) + $signed({imm, 1'b0})) : $signed(PC) + $signed(4);
                     end
                     blt_funct3: begin
                         // blt
-                        imm = {20'b0, i_IMEM_data[31], i_IMEM_data[8], i_IMEM_data[30:25], i_IMEM_data[12:9]};
+                        imm = {{20{i_IMEM_data[31]}}, i_IMEM_data[31], i_IMEM_data[7], i_IMEM_data[30:25], i_IMEM_data[11:8]};
                         PC_nxt = ($signed(rdata1) < $signed(rdata2)) ? ($signed(PC) + $signed({imm, 1'b0})) : $signed(PC) + $signed(4);
                     end
                     bne_funct3: begin
                         // bne
-                        imm = {20'b0, i_IMEM_data[31], i_IMEM_data[8], i_IMEM_data[30:25], i_IMEM_data[12:9]};
+                        imm = {{20{i_IMEM_data[31]}}, i_IMEM_data[31], i_IMEM_data[7], i_IMEM_data[30:25], i_IMEM_data[11:8]};
                         PC_nxt = ($signed(rdata1) != $signed(rdata2)) ? ($signed(PC) + $signed({imm, 1'b0})) : $signed(PC) + $signed(4);
                     end
                     default: begin
@@ -376,6 +382,7 @@ module CHIP #(                                                                  
 
             finish <= 0;
             muldiv_valid <= 0;
+            muldiv_ready <= 0;
         end
         else begin
 
@@ -388,6 +395,7 @@ module CHIP #(                                                                  
 
             finish <= finish_nxt;
             muldiv_valid <= muldiv_valid_nxt;
+            muldiv_ready <= muldiv_ready_nxt;
         end
     end
 endmodule
