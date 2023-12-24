@@ -156,7 +156,7 @@ module CHIP #(                                                                  
     assign ALU_control_input = (ALUOp==2'b00 ? 4'b0010 : (ALUOp[0]==1'b1 ? 4'b0110 : (i_IMEM_data[14:12]==3'b000 ? 4'b0010 : (i_IMEM_data[30]==1'b1 ? 4'b0110 : (i_IMEM_data[14:12]==3'b111 ? 4'b0000 : 4'b0001)))));
 
     // data memory
-    assign o_DMEM_cen = (MemtoReg || MemRead || MemWrite) && DMEM_cen;
+    assign o_DMEM_cen = MemtoReg || ((MemRead || MemWrite) && DMEM_cen);
     assign o_DMEM_wen = MemWrite && DMEM_wen;
     assign o_DMEM_addr = DMEM_addr_nxt;
     assign o_DMEM_wdata = DMEM_wdata;
@@ -232,7 +232,7 @@ module CHIP #(                                                                  
             end
             jalr_opcode: begin
                 // jalr
-                imm = {20'b0, i_IMEM_data[31:20]};
+                imm = {{20{i_IMEM_data[31]}}, i_IMEM_data[31:20]};
                 rdatad_nxt = $signed(PC) + $signed(4);
                 PC_nxt = $signed(rdata1) + $signed(imm);
             end
@@ -281,7 +281,7 @@ module CHIP #(                                                                  
                     end
                     slli_funct3: begin
                         // slli
-                        imm = i_IMEM_data[25:20];
+                        imm = i_IMEM_data[24:20];
                         rdatad_nxt = rdata1 << imm;
                         PC_nxt = $signed(PC) + $signed(4);
                     end
@@ -318,8 +318,8 @@ module CHIP #(                                                                  
                     DMEM_addr_nxt = $signed(rdata1) + $signed(imm);
                     rdatad_nxt = i_DMEM_rdata;
                     PC_nxt = $signed(PC) + $signed(4);
-                    DMEM_ready_nxt = 1;
                     DMEM_cen_nxt = 1;
+                    DMEM_ready_nxt = 1;
                 end
             end
             sw_opcode: begin
@@ -642,11 +642,12 @@ module Cache#(
     
     // data/address
     reg [ADDR_W-1:0] addr, addr_nxt;
+    reg [ADDR_W-1:0] real_addr, real_addr_nxt;
     reg [BIT_W-1:0] rdata, rdata_nxt;
     reg [BIT_W-1:0]  wdata, wdata_nxt;
-    reg [ADDR_W-1:0] real_addr, real_addr_nxt;
     reg [BIT_W*4-1:0] mem_rdata, mem_rdata_nxt;
     reg [BIT_W*4-1:0]  mem_wdata, mem_wdata_nxt;
+    wire [ADDR_W-1:0] real_i_proc_addr;
     // control signals
     reg stall, stall_nxt;
     reg finish, finish_nxt;
@@ -679,8 +680,10 @@ module Cache#(
     // memory
     assign o_mem_cen = cen;
     assign o_mem_wen = wen;
-    assign o_mem_addr = addr;
+    assign o_mem_addr = i_offset + {(addr-i_offset)>>4, 4'b0};
     assign o_mem_wdata = mem_wdata;
+
+    assign real_i_proc_addr = i_proc_addr - i_offset;
 
     // FSM
     reg [4:0] i;
@@ -708,7 +711,6 @@ module Cache#(
 
         case(state)
             S_IDLE: begin
-                // $display("S_IDLE");
                 rdata_nxt = 32'bz;
                 cen_nxt = 0;
                 wen_nxt = 0;
@@ -742,21 +744,16 @@ module Cache#(
             S_WRITE: begin
                 mem_wdata_nxt = i_proc_wdata;
                 wdata_nxt = i_proc_wdata;
-                addr_nxt = i_proc_addr;
-                real_addr_nxt = i_proc_addr-i_offset;   // used for cache addressing
-                // $display("S_WRITE");
-                if (v[real_addr[7:4]] && (tag[real_addr[7:4]] == real_addr[31:8])) begin   // hit
+                if (v[real_addr_nxt[7:4]] && (tag[real_addr_nxt[7:4]] == real_addr_nxt[31:8])) begin   // hit
                     for (i=0; i<16; i=i+1) begin
-                        dirty_nxt[i] = 1;
-
-                        if (i==real_addr[7:4]) begin
-                            case (real_addr[3:2])
+                        if (i==real_addr_nxt[7:4]) begin
+                            dirty_nxt[i] = 1;
+                            case (real_addr_nxt[3:2])
                                 0: entry_nxt[i] = {entry[i][4*BIT_W-1:1*BIT_W], i_proc_wdata};
                                 1: entry_nxt[i] = {entry[i][4*BIT_W-1:2*BIT_W], i_proc_wdata, entry[i][1*BIT_W-1:0]};
                                 2: entry_nxt[i] = {entry[i][4*BIT_W-1:3*BIT_W], i_proc_wdata, entry[i][2*BIT_W-1:0]};
                                 3: entry_nxt[i] = {i_proc_wdata, entry[i][3*BIT_W-1:0]};
                             endcase
-                            // entry_nxt[i][{real_addr[3:2], 5'b0}+:BIT_W] = wdata;
                         end
                         else begin
                             entry_nxt[i] = entry[i];
@@ -767,11 +764,12 @@ module Cache#(
                 end 
                 else begin  // miss
                     stall_nxt = 1;
-                    if (dirty[real_addr[7:4]]) begin // dirty
+                    if (dirty[real_addr_nxt[7:4]]) begin // dirty
+                        addr_nxt = {tag[real_addr_nxt[7:4]], real_i_proc_addr[7:4], 4'b0} + i_offset;
                         state_nxt = S_WB;
                         cen_nxt = 1;
                         wen_nxt = 1;
-                        mem_wdata_nxt = entry[real_addr[7:4]];
+                        mem_wdata_nxt = entry[real_addr_nxt[7:4]];
                     end
                     else begin  // !dirty
                         state_nxt = S_ALLO;
@@ -782,13 +780,13 @@ module Cache#(
             end
 
             S_WB: begin
-                // $display("S_WB");
                 if (!i_mem_stall) begin
                     state_nxt =  (mode==M_CLEAN)?S_CLEAN:S_ALLO;
                     stall_nxt = 1;
                     dirty_nxt[real_addr[7:4]] = 0;
                     cen_nxt = (mode==M_CLEAN)?0:1;
                     wen_nxt = 0;
+                    addr_nxt = i_proc_addr;
                 end
                 else begin
                     state_nxt = S_WB;
@@ -798,7 +796,6 @@ module Cache#(
             end
 
             S_ALLO: begin
-                // $display("S_ALLO");
                 if (!i_mem_stall) begin
                     state_nxt = S_IDLE;
                     rdata_nxt = (mode==M_READ)?i_mem_rdata[{real_addr[3:2], 5'b0}+:BIT_W]:32'bz;
@@ -813,10 +810,10 @@ module Cache#(
                             if (mode==M_WRITE) begin    // write
                                 dirty_nxt[i] = 1;
                                 case (real_addr[3:2])
-                                    0: entry_nxt[i] = {i_mem_rdata[4*BIT_W-1:1*BIT_W], wdata};
-                                    1: entry_nxt[i] = {i_mem_rdata[4*BIT_W-1:2*BIT_W], wdata, i_mem_rdata[1*BIT_W-1:0]};
-                                    2: entry_nxt[i] = {i_mem_rdata[4*BIT_W-1:3*BIT_W], wdata, i_mem_rdata[2*BIT_W-1:0]};
-                                    3: entry_nxt[i] = {wdata, i_mem_rdata[3*BIT_W-1:0]};
+                                    0: entry_nxt[i] = {i_mem_rdata[4*BIT_W-1:1*BIT_W], i_proc_wdata};
+                                    1: entry_nxt[i] = {i_mem_rdata[4*BIT_W-1:2*BIT_W], i_proc_wdata, i_mem_rdata[1*BIT_W-1:0]};
+                                    2: entry_nxt[i] = {i_mem_rdata[4*BIT_W-1:3*BIT_W], i_proc_wdata, i_mem_rdata[2*BIT_W-1:0]};
+                                    3: entry_nxt[i] = {i_proc_wdata, i_mem_rdata[3*BIT_W-1:0]};
                                 endcase
                             end else begin  // read
                                 entry_nxt[i] = i_mem_rdata;
@@ -839,20 +836,18 @@ module Cache#(
             S_READ: begin
                 mem_wdata_nxt = i_proc_wdata;
                 wdata_nxt = i_proc_wdata;
-                addr_nxt = i_proc_addr;
-                real_addr_nxt = i_proc_addr-i_offset;   // used for cache addressing
-                // $display("S_READ");
-                if (v[real_addr[7:4]] && (tag[real_addr[7:4]] == real_addr[31:8])) begin   // hit
-                    rdata_nxt = entry[real_addr[7:4]][{real_addr[3:2], 5'b0}+:BIT_W];
+                if (v[real_addr_nxt[7:4]] && (tag[real_addr_nxt[7:4]] == real_addr_nxt[31:8])) begin   // hit
+                    rdata_nxt = entry[real_addr_nxt[7:4]][{real_addr_nxt[3:2], 5'b0}+:BIT_W];
                     state_nxt = S_IDLE;
                     stall_nxt = 0;
                 end 
                 else begin  // miss
-                    if (dirty[real_addr[7:4]]) begin // dirty
+                    if (dirty[real_addr_nxt[7:4]]) begin // dirty
+                        addr_nxt = {tag[real_addr_nxt[7:4]], real_i_proc_addr[7:4], 4'b0} + i_offset;
                         state_nxt = S_WB;
                         cen_nxt = 1;
                         wen_nxt = 1;
-                        mem_wdata_nxt = entry[real_addr[7:4]];
+                        mem_wdata_nxt = entry[real_addr_nxt[7:4]];
                     end
                     else begin  // !dirty
                         state_nxt = S_ALLO;
@@ -863,7 +858,6 @@ module Cache#(
             end
 
             S_CLEAN : begin
-                // $display("S_CLEAN");
                 mode_nxt = M_CLEAN;
 
                 if (dirty == 0) begin
@@ -888,15 +882,11 @@ module Cache#(
             end
 
             default: begin
-                // $display("error");
             end
         endcase
     end
 
     always @(posedge i_clk or negedge i_rst_n) begin
-        // $display("Hi");
-        // $display("%d", i_rst_n);
-        // $display("%d", i_clk);
         if (!i_rst_n) begin
             state <= S_IDLE;
             mode <= M_READ;
