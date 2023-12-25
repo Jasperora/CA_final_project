@@ -1,8 +1,24 @@
-# Problem
-1. control signals are wrong (is this problem fixed?)
+# 2023 Fall NTUEE Computer Architecture Final Project: Single Cycle CPU with Cache
 
-# Update:
-1. CHIP_without_cache.v is the faster version (but not suiable for cache)
+## Features
 
-# TODO
-1. Add **"REVIEW"** tag to _Setting > Todo-tree > General: Tags_
+### CPU
+
+Implement the following instructions:
+
+- auipc, jal, jalr
+- add, sub, and, xor
+- addi, slli, slti, srai
+- lw, sw
+- mul
+- beq, bge, blt, bne
+- ecall
+
+### Cache
+
+- Write Back + Write Allocation
+
+## Team members
+
+- [陳威侑](https://github.com/Jasperora)
+- [吳宣逸](https://github.com/Xuan-Yi)
