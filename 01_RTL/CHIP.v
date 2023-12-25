@@ -732,7 +732,6 @@ module Cache#(
                         if (i_proc_wen) begin   // write
                             state_nxt = S_WRITE;
                             mode_nxt = M_WRITE;
-                            mem_wdata_nxt = i_proc_wdata;
                         end
                         else begin  // read
                             state_nxt = S_READ;

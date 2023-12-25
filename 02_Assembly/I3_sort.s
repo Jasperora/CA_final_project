@@ -1,10 +1,19 @@
 .data
-    n: .word 5
-    a: .word 3
-    b: .word 1
-    c: .word 5
-    d: .word 2
-    e: .word 4
+    # n: .word 5
+    # a: .word 3
+    # b: .word 1
+    # c: .word 5
+    # d: .word 2
+    # e: .word 4
+    
+    n: .word 7
+    a: .word 9
+    b: .word 7
+    c: .word 3
+    d: .word 1
+    e: .word 5
+    f: .word 8
+    g: .word 0
 .text
 .globl __start
 
