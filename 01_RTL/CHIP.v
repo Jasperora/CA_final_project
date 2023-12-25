@@ -680,7 +680,7 @@ module Cache#(
     assign o_proc_stall = stall?(state_nxt!=S_IDLE): i_proc_cen;
     assign o_cache_finish = finish;
     // memory
-    assign rdata_out = (state==S_ALLO || state==S_READ)?rdata_nxt:32'bz;
+    assign rdata_out = (state==S_ALLO || state==S_READ)?rdata_nxt:32'b0;
     assign o_mem_cen = cen;
     assign o_mem_wen = wen;
     assign o_mem_addr = i_offset + {(mem_addr-i_offset)>>4, 4'b0};
@@ -715,9 +715,9 @@ module Cache#(
                 cen_nxt = 0;
                 wen_nxt = 0;
 
-                rdata_nxt = 32'bz;
-                wdata_nxt = 32'bz;
-                mem_wdata_nxt = 128'bz;
+                rdata_nxt = 32'b0;
+                wdata_nxt = 32'b0;
+                mem_wdata_nxt = 128'b0;
 
                 if (i_proc_finish) begin    // write back all dirty blocks
                     state_nxt = S_CLEAN;
@@ -752,7 +752,7 @@ module Cache#(
                 if (v[real_addr[7:4]] && (tag[real_addr[7:4]] == real_addr[31:8])) begin   // hit
                     state_nxt = S_IDLE;
                     stall_nxt = 0;
-                    wdata_nxt = 32'bz;
+                    wdata_nxt = 32'b0;
 
                     for (i=0; i<16; i=i+1) begin
                         if (i==real_addr[7:4]) begin
@@ -809,7 +809,7 @@ module Cache#(
 
                 if (!i_mem_stall) begin
                     state_nxt = S_IDLE;
-                    rdata_nxt = (mode==M_READ)?i_mem_rdata[{real_addr[3:2], 5'b0}+:BIT_W]:32'bz;
+                    rdata_nxt = (mode==M_READ)?i_mem_rdata[{real_addr[3:2], 5'b0}+:BIT_W]:32'b0;
 
 
                     for (i=0; i<16; i=i+1) begin
