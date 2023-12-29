@@ -261,7 +261,7 @@ module CHIP #(                                                                  
                     {mul_funct7, mul_funct3}: begin
                         // mul
                         PC_nxt = muldiv_done ? ($signed(PC) + $signed(4)) : PC;
-                        muldiv_ready_nxt = 0;
+                        muldiv_ready_nxt = muldiv_done ? 1 : 0;
                         muldiv_valid_nxt = muldiv_ready;
                         rdatad_nxt = muldiv_done ? muldiv_result : rdatad;
                     end
@@ -293,8 +293,8 @@ module CHIP #(                                                                  
                     end
                     srai_funct3: begin
                         // srai
-                        imm = i_IMEM_data[24:20];
-                        rdatad_nxt = rdata1 >>> imm;
+                        imm = i_IMEM_data[25:20];
+                        rdatad_nxt = $signed(rdata1) >>> imm;
                         PC_nxt = $signed(PC) + $signed(4);
                     end
                     default: begin
