@@ -293,7 +293,7 @@ module CHIP #(                                                                  
                     end
                     srai_funct3: begin
                         // srai
-                        imm = i_IMEM_data[25:20];
+                        imm = i_IMEM_data[24:20];
                         rdatad_nxt = $signed(rdata1) >>> imm;
                         PC_nxt = $signed(PC) + $signed(4);
                     end
