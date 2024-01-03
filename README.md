@@ -16,7 +16,7 @@ Implement the following instructions:
 
 ### Cache
 
-- Write Back + Write Allocation
+- Write Back + Write Allocation + 2-way association
 
 ## Team members
 
