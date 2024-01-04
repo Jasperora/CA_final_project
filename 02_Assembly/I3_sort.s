@@ -6,26 +6,26 @@
     # d: .word 2
     # e: .word 4
     
-    # n: .word 7
-    # a: .word 9
-    # b: .word 7
-    # c: .word 3
-    # d: .word 1
-    # e: .word 5
-    # f: .word 8
-    # g: .word 0
+    n: .word 7
+    a: .word 9
+    b: .word 7
+    c: .word 3
+    d: .word 1
+    e: .word 5
+    f: .word 8
+    g: .word 0
     
-    n: .word 10
-    a: .word 2
-    b: .word 3
-    c: .word 0
-    d: .word 8
-    e: .word 9
-    f: .word 4
-    g: .word 1
-    h: .word 5
-    i: .word 6
-    j: .word 7
+    # n: .word 10
+    # a: .word 2
+    # b: .word 3
+    # c: .word 0
+    # d: .word 8
+    # e: .word 9
+    # f: .word 4
+    # g: .word 1
+    # h: .word 5
+    # i: .word 6
+    # j: .word 7
 .text
 .globl __start
 
