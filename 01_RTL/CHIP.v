@@ -604,22 +604,22 @@ module Cache#(  // 545 -> 535
         input i_clk,
         input i_rst_n,
         // processor interface
-            input i_proc_cen,
-            input i_proc_wen,
-            input [ADDR_W-1:0] i_proc_addr,
-            input [BIT_W-1:0]  i_proc_wdata,
-            output [BIT_W-1:0] o_proc_rdata,
-            output o_proc_stall,
-            input i_proc_finish,
-            output o_cache_finish,
+        input i_proc_cen,
+        input i_proc_wen,
+        input [ADDR_W-1:0] i_proc_addr,
+        input [BIT_W-1:0]  i_proc_wdata,
+        output [BIT_W-1:0] o_proc_rdata,
+        output o_proc_stall,
+        input i_proc_finish,
+        output o_cache_finish,
         // memory interface
-            output o_mem_cen,
-            output o_mem_wen,
-            output [ADDR_W-1:0] o_mem_addr,
-            output [BIT_W*4-1:0]  o_mem_wdata,
-            input [BIT_W*4-1:0] i_mem_rdata,
-            input i_mem_stall,
-            output o_cache_available,
+        output o_mem_cen,
+        output o_mem_wen,
+        output [ADDR_W-1:0] o_mem_addr,
+        output [BIT_W*4-1:0]  o_mem_wdata,
+        input [BIT_W*4-1:0] i_mem_rdata,
+        input i_mem_stall,
+        output o_cache_available,
         // others
         input  [ADDR_W-1: 0] i_offset
     );
@@ -689,7 +689,7 @@ module Cache#(  // 545 -> 535
     assign o_mem_wdata = mem_wdata;
     assign hit = (v[real_addr[6:4]][0] && (tag[real_addr[6:4]][0] == real_addr[31:7])) || (v[real_addr[6:4]][1] && (tag[real_addr[6:4]][1] == real_addr[31:7]));
     assign hit_idx = (tag[real_addr[6:4]][0] == real_addr[31:7])?0:1;
-    assign miss_idx = new[real_addr[6:4]]?0:1;
+    assign miss_idx = (new[real_addr[6:4]]==1)?0:1;  // take the older block
     assign clean_idx = (real_addr_nxt[31:7]==tag[real_addr_nxt[6:4]][0])?0:1;
 
     // FSM
@@ -758,7 +758,6 @@ module Cache#(  // 545 -> 535
             end
 
             S_READ_WRITE: begin
-
                 if (hit) begin   // hit
                     state_nxt = S_IDLE;
                     stall_nxt = 0;
@@ -768,17 +767,17 @@ module Cache#(  // 545 -> 535
                         wdata_nxt = 32'b0;
 
                         for (i=0; i<8; i=i+1) begin
-                            for (j=0; j<2; j=j+1) begin
-                                if (i==real_addr[6:4]) begin
-                                    dirty_nxt[i][hit_idx] = 1;
-                                    case (real_addr[3:2])
-                                        0: entry_nxt[i][hit_idx] = {entry[i][hit_idx][4*BIT_W-1:1*BIT_W], i_proc_wdata};
-                                        1: entry_nxt[i][hit_idx] = {entry[i][hit_idx][4*BIT_W-1:2*BIT_W], i_proc_wdata, entry[i][hit_idx][1*BIT_W-1:0]};
-                                        2: entry_nxt[i][hit_idx] = {entry[i][hit_idx][4*BIT_W-1:3*BIT_W], i_proc_wdata, entry[i][hit_idx][2*BIT_W-1:0]};
-                                        3: entry_nxt[i][hit_idx] = {i_proc_wdata, entry[i][hit_idx][3*BIT_W-1:0]};
-                                    endcase
-                                end
-                                else begin
+                            if (i==real_addr[6:4]) begin
+                                dirty_nxt[i][hit_idx] = 1;
+                                case (real_addr[3:2])
+                                    0: entry_nxt[i][hit_idx] = {entry[i][hit_idx][4*BIT_W-1:1*BIT_W], i_proc_wdata};
+                                    1: entry_nxt[i][hit_idx] = {entry[i][hit_idx][4*BIT_W-1:2*BIT_W], i_proc_wdata, entry[i][hit_idx][1*BIT_W-1:0]};
+                                    2: entry_nxt[i][hit_idx] = {entry[i][hit_idx][4*BIT_W-1:3*BIT_W], i_proc_wdata, entry[i][hit_idx][2*BIT_W-1:0]};
+                                    3: entry_nxt[i][hit_idx] = {i_proc_wdata, entry[i][hit_idx][3*BIT_W-1:0]};
+                                endcase
+                            end
+                            else begin
+                                for (j=0; j<2; j=j+1) begin
                                     entry_nxt[i][j] = entry[i][j];
                                 end
                             end
@@ -833,17 +832,17 @@ module Cache#(  // 545 -> 535
 
                     for (i=0; i<8; i=i+1) begin
                         for (j=0; j<2; j=j+1) begin
-                            if (i==real_addr[6:4]) begin
-                                tag_nxt[i][miss_idx] = real_addr[31:7];
-                                v_nxt[i][miss_idx] = 1;
+                            if (i==real_addr[6:4] && j==miss_idx) begin
+                                tag_nxt[i][j] = real_addr[31:7];
+                                v_nxt[i][j] = 1;
                                 
                                 if (mode==M_WRITE) begin    // write
-                                    dirty_nxt[i][miss_idx] = 1;
+                                    dirty_nxt[i][j] = 1;
                                     case (real_addr[3:2])
-                                        0: entry_nxt[i][miss_idx] = {i_mem_rdata[4*BIT_W-1:1*BIT_W], wdata};
-                                        1: entry_nxt[i][miss_idx] = {i_mem_rdata[4*BIT_W-1:2*BIT_W], wdata, i_mem_rdata[1*BIT_W-1:0]};
-                                        2: entry_nxt[i][miss_idx] = {i_mem_rdata[4*BIT_W-1:3*BIT_W], wdata, i_mem_rdata[2*BIT_W-1:0]};
-                                        3: entry_nxt[i][miss_idx] = {wdata, i_mem_rdata[3*BIT_W-1:0]};
+                                        0: entry_nxt[i][j] = {i_mem_rdata[4*BIT_W-1:1*BIT_W], wdata};
+                                        1: entry_nxt[i][j] = {i_mem_rdata[4*BIT_W-1:2*BIT_W], wdata, i_mem_rdata[1*BIT_W-1:0]};
+                                        2: entry_nxt[i][j] = {i_mem_rdata[4*BIT_W-1:3*BIT_W], wdata, i_mem_rdata[2*BIT_W-1:0]};
+                                        3: entry_nxt[i][j] = {wdata, i_mem_rdata[3*BIT_W-1:0]};
                                     endcase
                                 end else begin  // read
                                     entry_nxt[i][j] = i_mem_rdata;
