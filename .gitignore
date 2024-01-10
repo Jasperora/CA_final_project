@@ -1,0 +1,18 @@
+Final_group_10*
+
+# draw.io
+*.drawio.bkp
+*.drawio
+
+# images
+*.png
+*.jpg
+
+# compressed files
+*.zip
+
+# documents
+*.docx
+
+# link
+*.lnk

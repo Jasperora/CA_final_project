@@ -1,5 +1,4 @@
 # 2023 Fall NTUEE Computer Architecture Final Project: Single Cycle CPU with Cache
-
 ## Features
 
 ### CPU
@@ -16,9 +15,5 @@ Implement the following instructions:
 
 ### Cache
 
+> ps. The report doesn't discuss "2-way association".
 - Write Back + Write Allocation + 2-way association
-
-## Team members
-
-- [陳威侑](https://github.com/Jasperora)
-- [吳宣逸](https://github.com/Xuan-Yi)
